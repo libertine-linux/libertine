@@ -1,0 +1,41 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+libertine_check_pathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleThem()
+{
+	local a
+	local b
+	IFS=' ' read -r a b <<-EOF
+		$_program_varPath
+	EOF
+	
+	if [ -n "$b" ]; then
+		core_exitError $core_commandLine_exitCode_CANTCREAT "The path '$_program_varPath' has spaces in it; autoconf and friends (eg CFLAGS) do not like this"
+	fi
+}
+
+core_dependency_requires '*' diff rm
+libertine_check_machineSettingsHash()
+{
+	local TMP_FILE
+	core_temporaryFiles_newFileToRemoveOnExit
+	local temporaryMachineHashFilePath="$TMP_FILE"
+	
+	libertine_check_calculateMachineSettingsHash >"$temporaryMachineHashFilePath"
+	
+	if [ -s "$libertine_machineHashFilePath" ]; then
+		if ! diff -a -q "$temporaryMachineHashFilePath" "$libertine_machineHashFilePath" 1>/dev/null; then
+			# Files differ, remove all packages
+			rm -rf "$libertine_machineOutputPackagesFolderPath"
+		fi
+	fi
+	
+	rm -rf "$libertine_machineHashFilePath"
+	mv "$temporaryMachineHashFilePath" "$libertine_machineHashFilePath"
+}
+
+libertine_check_calculateMachineSettingsHash()
+{
+	printf '%s %s\n' .machine "$(_libertine_compile_folderHashValue "$libertine_machineSettingsFolderPath")"
+}

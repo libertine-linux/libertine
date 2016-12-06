@@ -1,0 +1,95 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+core_dependency_requires '*' head
+libertine_architecture_configure()
+{	
+	libertine_architecture="$(head -n 1 "$libertine_machineSettingsFolderPath"/architecture)"
+	libertine_architecture_setHost "$libertine_architecture"
+}
+
+libertine_architecture_setHost()
+{
+	local architecture="$1"
+	
+	case "$architecture" in
+		
+		x86_64)
+			libertine_host='x86_64-linux-musl'
+			libertine_hostLinux='x86'
+			libertine_hostLinuxSpecific='x86_64'
+			libertine_hostCmakeProcessor='x86_64'
+			libertine_hostForMuslLd='ld-musl-x86_64.so.1'
+			libertine_hostAutoconf='x86_64-pc-linux-musl'
+			libertine_hostShorter='x86_64-linux-musl'
+			libertine_hostIsBigEndian='false'
+			libertine_hostIs64Bit=true
+		;;
+		
+		# arm)
+		# 	libertine_hostLinux='arm'
+		#
+		#
+		# 	libertine_hostIsBigEndian='false'
+		# 	libertine_hostIs64Bit='false'
+		# ;;
+		#
+		# aarch64)
+		# 	libertine_hostLinux='arm64'
+		#
+		#
+		# 	libertine_hostIsBigEndian='false'
+		# 	libertine_hostIs64Bit='true'
+		# ;;
+		
+		*)
+			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) host architecture '$architecture"
+		;;
+		
+	esac
+}
+
+libertine_architecture_setBuild()
+{
+	local architecture="$1"
+	
+	case "$architecture" in
+		
+		x86_64)
+			# Done deliberately to try to avoid conflicts in build binaries
+			#libertine_build='x86_64-linux-musl'
+			libertine_build='x86_64-BUILD-linux-musl'
+			
+			libertine_buildLinux='x86'
+			libertine_buildLinuxSpecific='x86_64'
+			libertine_buildCmakeProcessor='x86_64'
+			libertine_buildForMuslLd='ld-musl-x86_64.so.1'
+			libertine_buildAutoconf='x86_64-pc-linux-musl'
+			libertine_buildShorter='x86_64-linux-musl'
+			libertine_buildIsBigEndian='false'
+			libertine_buildIs64Bit='true'
+		;;
+		
+		# arm)
+		# 	libertine_buildLinux='arm'
+		#
+		#
+		# 	libertine_buildIsBigEndian='false'
+		# 	libertine_buildIs64Bit='false'
+		# ;;
+		#
+		# aarch64)
+		# 	libertine_buildLinux='arm64'
+		#
+		#
+		# 	libertine_buildIsBigEndian='false'
+		# 	libertine_buildIs64Bit='true'
+		# ;;
+		
+		*)
+			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) build architecture '$architecture'"
+		;;
+		
+	esac
+}

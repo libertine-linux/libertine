@@ -1,0 +1,15 @@
+[submodule "packages"]
+	path = packages
+	url = https://github.com/libertine-linux/packages.git
+[submodule "montebianco"]
+	path = montebianco
+	url = https://github.com/libertine-linux/montebianco.git
+[submodule "etc/shellfire/paths.d"]
+	path = etc/shellfire/paths.d
+	url = https://github.com/shellfire-dev/paths.d
+[submodule "lib/shellfire/core"]
+	path = lib/shellfire/core
+	url = https://github.com/shellfire-dev/core.git
+[submodule "lib/shellfire/cpucount"]
+	path = lib/shellfire/cpucount
+	url = https://github.com/shellfire-dev/cpucount.git

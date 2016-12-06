@@ -1,0 +1,1144 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+depends()
+{
+	local dependentPackage
+	for dependentPackage in "$@"
+	do
+		core_message NOTICE "${_libertine_compile_depth}Package '$package' depends on '$dependentPackage'"
+		core_variable_array_appendUniquely _libertine_compile_depends "$dependentPackage"
+	done
+}
+
+build_needs()
+{
+	local buildBinaryNeeded
+	for buildBinaryNeeded in "$@"
+	do
+		core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded "$buildBinaryNeeded"
+	done
+}
+
+build_provides()
+{
+	local buildBinaryProvided
+	for buildBinaryProvided in "$@"
+	do
+		core_message INFO "  ${_libertine_compile_depth}Package '$package' provides build binary '$buildBinaryProvided'"
+		core_variable_array_appendUniquely _libertine_compile_buildBinariesProvided "$buildBinaryProvided"
+	done
+}
+
+libertine_public_patch()
+{
+	local patchRelativeFilePath
+	for patchRelativeFilePath in "$@"
+	do
+		core_message INFO "    ${_libertine_compile_depth}Patching using '$(libertine_public_packagePath)/patches/$patchRelativeFilePath"
+		patch -p1 -i "$(libertine_public_packagePath)"/patches/"$patchRelativeFilePath" 1>&2
+	done
+}
+
+libertine_public_patchAllEndingDotPatchInPatchesFolder()
+{
+	set --
+	pushd "$(libertine_public_packagePath)"/patches
+		set +f		
+			local patchRelativeFilePath
+			for patchRelativeFilePath in *.patch
+			do
+				set -f
+				if [ ! -s "$patchRelativeFilePath" ]; then
+					continue
+				fi
+				set -- "$@" "$patchRelativeFilePath"
+			done
+		set -f
+	popd
+	libertine_public_patch "$@"
+}
+
+libertine_public_PATH()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/PATH
+}
+
+libertine_public_originalPackagePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineInputPackagesPath"/"$package"
+}
+
+libertine_public_packagePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/copy
+}
+
+libertine_public_sourcePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/copy/"$variant"
+}
+
+libertine_public_inputMakePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/input-make
+}
+
+libertine_public_inputSysrootPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/input-sysroot
+}
+
+libertine_public_outputPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"
+}
+
+libertine_public_outputHashPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/hash
+}
+
+libertine_public_outputBuildSysrootPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/build-sysroot
+}
+
+libertine_public_outputHostSysrootPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/host-sysroot
+}
+
+libertine_public_outputMiscPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/misc
+}
+
+libertine_public_outputInitramfsPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/initramfs
+}
+
+libertine_public_outputInitramfsContentsFilePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/initramfs.contents
+}
+
+libertine_public_outputKernelBootCommandLineFilePath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/kernel-boot.command-line
+}
+
+core_dependency_requires '*' cp find xargs rm
+libertine_public_copy()
+{
+	cp -a -f -H "$@"
+	
+	if [ $# -lt 2 ]; then
+		return 0
+	fi
+	local argCount=$#
+	local shiftAmount=$((argCount - 1))
+	shift $shiftAmount
+	local destinationFolderPath="$1"
+	
+	# (1) From git
+	# (2) From git
+	# (3) Mac OS X
+	# (4) Mac OS X (NFS share or USB FAT filesystem)
+	find "$destinationFolderPath" \
+		-type f -name '.gitignore' \
+		-or -type f -name '.git' \
+		-or -type f -name '.DS_Store' \
+		-or -type f -name '._*' \
+		-print0 | xargs -0 -r -s 1024 rm -rf
+}
+
+core_dependency_requires '*' find xargs chown
+_libertine_public_copy_filesystem_shadowProtection()
+{
+	local relativeFolderPath="$1"
+	
+	local folderPath="${destinationFolderPath}${relativeFolderPath}"
+	if [ -d "$folderPath" ]; then
+		find "$folderPath" -mindepth 1 -type f -print0 | xargs -0 -r -s 1024 chmod 0400
+		chmod 0500 "$folderPath"
+	fi
+}
+
+core_dependency_requires '*' find xargs chown
+_libertine_public_copy_filesystem_homeFolderProtection()
+{
+	local relativeFolderPath="$1"
+	
+	local folderPath="${destinationFolderPath}${relativeFolderPath}"
+	if [ -d "$folderPath" ]; then
+		find "$folderPath" -mindepth 1 -type d -print0 | xargs -0 -r -s 1024 chmod 0700
+	fi
+}
+
+core_dependency_requires '*' find xargs rm chmod id chown
+libertine_public_copy_filesystem()
+{
+	libertine_public_copy "$1". "$2"
+	
+	local argCount=$#
+	local shiftAmount=$((argCount - 1))
+	shift $shiftAmount
+	local destinationFolderPath="$1"
+	
+	# 1 - 3: Remove files that shouldn't make it to the initramfs
+	# 4, 5, 6, 7: Remove block devices, char devices, named pipes (FIFOs) and sockets; these should be created using initramfs generate (and can't have been created via storage in git)
+	find "$destinationFolderPath" \
+		-type f -name '*.disabled' \
+		-or -type f -name 'README.*' \
+		-or -type f -name 'README' \
+		-or -type b \
+		-or -type c \
+		-or -type p \
+		-or -type s \
+		-print0 | xargs -0 -r -s 1024 rm -rf
+	
+	# Ensure all files are owned by the current user, so that the initramfs generation code correctly maps to root
+	local uid="$(id -u)"
+	local gid="$(id -g)"
+	chown -h -R $uid:$gid "$destinationFolderPath"
+		
+	# Normalise folder and file permissions
+	find "$destinationFolderPath" -type f -perm -0500 -print0 | xargs -0 -r -s 1024 chmod 0755
+	find "$destinationFolderPath" -type f ! -perm -0500 -print0 | xargs -0 -r -s 1024 chmod 0644
+	find "$destinationFolderPath" -type d -print0 | xargs -0 -r -s 1024 chmod 0755
+	
+	# Remove setuid/setgid and sticky bit (shouldn't be set, but then again, it's not preserved by git, so play safe to ensure reproducibility)
+	chmod -R a-s,a-t "$destinationFolderPath"
+
+	# Ensure files in .shadow and .gshadow are strongly protected, as are /etc/sudoers.d
+	_libertine_public_copy_filesystem_shadowProtection /etc/shadow.d
+	_libertine_public_copy_filesystem_shadowProtection /etc/gshadow.d
+	_libertine_public_copy_filesystem_shadowProtection /etc/sudoers.d
+		
+	_libertine_public_copy_filesystem_homeFolderProtection /home
+}
+
+libertine_public_populateInputSysrootForBuild()
+{
+	_libertine_public_populateInputSysroot true "$@"
+}
+
+libertine_public_populateInputSysroot()
+{
+	local forBuild
+	case "$package" in
+	
+		build_*)
+			forBuild=true
+		;;
+	
+		*)
+			forBuild=false
+		;;
+	
+	esac
+	
+	_libertine_public_populateInputSysroot "$forBuild" "$@"
+}
+
+core_dependency_requires '*' mkdir mv ln rm find xargs sed
+_libertine_public_populateInputSysroot()
+{
+	local forBuild="$1"
+	shift 1
+	
+	if $forBuild; then
+		local sysrootFunction=libertine_public_outputBuildSysrootPath
+		local host="$libertine_build"
+		local muslCrossVariant=build_musl_cross_make_build
+	else
+		local sysrootFunction=libertine_public_outputHostSysrootPath
+		local host="$libertine_host"
+		local muslCrossVariant=build_musl_cross_make_host
+	fi
+	
+	local inputSysrootPath="$(libertine_public_inputSysrootPath)"
+	
+	# With rsync, we used to do --exclude=usr/bin --exclude=usr/libexec --exclude=usr/"$host"/bin to make this more efficient
+	libertine_public_copy "$(libertine_public_outputBuildSysrootPath "$muslCrossVariant")"/. "$inputSysrootPath"/
+		
+	local packageX
+	for packageX in "$@"
+	do
+		case "$packageX" in
+			
+			"$muslCrossVariant")
+				continue
+			;;
+			
+		esac
+		
+		libertine_public_copy "$($sysrootFunction "$packageX")"/. "$inputSysrootPath"/
+	done
+	
+	# Fix-up libtool cruft
+	find "$inputSysrootPath" -type f -name '*.la' | xargs -r sed -i -e "s;^libdir='/;libdir='${inputSysrootPath}/;g"
+	
+	# Fix-up pkg-config cruft
+	find "$inputSysrootPath" -type f -name '*.pc' | xargs -r sed -i -e 's;^prefix=/;prefix='"${inputSysrootPath}"'/;g'
+}
+
+core_dependency_requires '*' rm cat chmod
+libertine_public_addOrReplaceBinaryInPathWithSwallow()
+{
+	local binary="$1"
+	
+	local path="$(_libertine_compile_pathsPATH)"
+	rm -rf "$path"/"$binary"
+
+	local envShaBang="$(libertine_public_PATH)"/env
+	
+	cat >"$path"/"$binary" <<-EOF
+		#!${envShaBang} sh
+		:
+	EOF
+	chmod +x "$path"/"$binary"
+}
+
+libertine_public_gccAndBinutilsExecutables()
+{
+	local callback="$1"
+	shift 1
+	
+	local gccExecutable
+	for gccExecutable in addr2line ar as c++ c++filt cc cpp elfedit g++ gcc gcc-ar gcc-nm gcc-ranlib gcov gcov-tool gprof ld nm objcopy objdump ranlib readelf size strings strip
+	do
+		$callback "$gccExecutable" "$@"
+	done
+}
+
+core_dependency_requires '*' rm ln
+libertine_public_addOrReplaceBinaryInPath()
+{
+	local binary="$1"
+	local pathToBinary="$2"
+	
+	if [ ! -x "$pathToBinary" ]; then
+		core_exitError $core_commandLine_exitCode_UNAVAILABLE "Missing binary (or not executable) '$pathToBinary' for '$binary'"
+	fi
+	
+	local path="$(_libertine_compile_pathsPATH)"
+	rm -rf "$path"/"$binary"
+	ln -s "$pathToBinary" "$path"/"$binary"
+}
+
+_libertine_public_compilerFlags()
+{
+	local flagsFile="$1".compiler-flags
+	shift 1
+		
+	printf '-pipe'
+	local flagInFlagsFile
+	while IFS='' read -r flagInFlagsFile
+	do
+		if [ "$flagInFlagsFile" = '-pipe' ]; then
+			continue
+		fi
+	
+		local outputFlag=true
+		local flagToRemove
+		for flagToRemove in "$@"
+		do
+			if [ "$flagToRemove" = "$flagInFlagsFile" ]; then
+				outputFlag=false
+				break
+			fi
+		done
+	
+		if $outputFlag; then
+			printf ' %s' "$flagInFlagsFile"
+		fi
+	
+	done <"$libertine_machineSettingsFolderPath"/compiler-flags/"$flagsFile"
+}
+
+libertine_public_buildCCompilerFlags()
+{
+	_libertine_public_compilerFlags build-c "$@"
+}
+
+libertine_public_buildCxxCompilerFlags()
+{
+	_libertine_public_compilerFlags build-cxx "$@"
+}
+
+libertine_public_hostCCompilerFlags()
+{
+	_libertine_public_compilerFlags host-c "$@"
+}
+
+libertine_public_hostCxxCompilerFlags()
+{
+	_libertine_public_compilerFlags host-cxx "$@"
+}
+
+core_dependency_requires '*' find xargs sed
+libertine_public_adjustShaBangAllFilesInPath()
+{
+	local folderPath="$1"
+	
+	case "$package" in
+		
+		build_*)
+			local envShaBang="$(libertine_public_PATH)"/env
+		;;
+		
+		*)
+			local envShaBang=/usr/bin/env
+		;;
+		
+	esac
+	
+	# Versions of GNU findutils c. 4.5.11+ (depends on backporting by distros) replaced +111 with /111 for some reason - which creates an unnecessary incompatibility
+	find "$folderPath" -type f -perm +111 -print0 | xargs -r -0 sed -i \
+		-e '1 s;^#! /;#!/;g' \
+		-e '1 s;^#!/bin/;#!/usr/bin/;g' \
+		-e '1 s;^#!/sbin/;#!/usr/sbin/;g' \
+		-e '1 s;^#!/usr/bin/;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/sbin/;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/bin/env env ;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/bin/env bash;#!/usr/bin/env sh;g' \
+		-e '1 s;^#!/usr/bin/env ;#!'"$envShaBang"' ;g'
+}
+
+core_dependency_requires '*' sed
+libertine_public_adjustShaBang()
+{
+	local filePath="$1"
+	
+	case "$package" in
+		
+		build_*)
+			local envShaBang="$(libertine_public_PATH)"/env
+		;;
+		
+		*)
+			local envShaBang=/usr/bin/env
+		;;
+		
+	esac
+	
+	# Designed to work with scripts that hard code /bin/sh, /bin/bash, /usr/bin/perl, /usr/bin/false, and other things seen in the wild
+	# Won't work with scripts that generate files
+	
+	# 1) Remove any leading space - it's a myth that this is needed: http://www.in-ulm.de/~mascheck/various/shebang/#details
+	# 2) Change all references to /bin to /usr/bin
+	# 3) Change all references to /sbin to /usr/sbin
+	# 4) Change all references to /usr/bin/something to /usr/bin/env something (so we always search the PATH)
+	# 5) Change all references to /usr/sbin/something to /usr/bin/env something (so we always search the PATH)
+	# 6) Change back any changes made to scripts which already had #!/usr/bin/env
+	# 7) Change all scripts using bash to use sh (may break some scripts)
+	# 8) Change /usr/bin/env to something that we have previously built (eg build_busybox env)
+	sed -i \
+		-e '1 s;^#! /;#!/;g' \
+		-e '1 s;^#!/bin/;#!/usr/bin/;g' \
+		-e '1 s;^#!/sbin/;#!/usr/sbin/;g' \
+		-e '1 s;^#!/usr/bin/;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/sbin/;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/bin/env env ;#!/usr/bin/env ;g' \
+		-e '1 s;^#!/usr/bin/env bash;#!/usr/bin/env sh;g' \
+		-e '1 s;^#!/usr/bin/env ;#!'"$envShaBang"' ;g' \
+		"$filePath"
+}
+
+libertine_public_track_PATH()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/PATH-track
+}
+
+core_dependency_requires '*' cat chmod
+libertine_public_track_executable()
+{
+	# eg libertine_public_PATH or libertine_public_ccache_PATH
+	local executableInWhichPath="$1"
+	shift 1
+		
+	local path="$(libertine_public_track_PATH)"
+	if [ "$path" = "$executableInWhichPath" ]; then
+		core_exitError $core_commandLine_exitCode_SOFTWARE "Can not track in tracking patch '$executableInWhichPath'"
+	fi
+	mkdir -m 0755 -p "$path"
+	
+	case "$package" in
+		
+		build_*)
+			local envShaBang="$(libertine_public_PATH)"/env
+		;;
+		
+		*)
+			local envShaBang=/usr/bin/env
+		;;
+		
+	esac
+	
+	local executable
+	for executable in "$@"
+	do
+		local binary="$path"/"$executable"
+		{
+			printf '#!%s sh\n' "$envShaBang"
+			printf 'echo %s: pwd: "$(pwd)" args: "$@" 1>>%s%s/%s.log%s\n' "$executable" "'" "$path"  "$executable" "'"
+			printf 'exec %s%s%s "$@" <&0\n' "'" "$executableInWhichPath"/"$executable" "'"
+		} >"$binary"
+		chmod +x "$binary"
+	done
+	
+	export PATH="$path":"$PATH"
+}
+
+libertine_public_ccache_PATH()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/PATH-ccache
+}
+
+core_dependency_requires '*' mkdir cat chmod
+libertine_public_ccache_createSymlinks()
+{
+	local path="$(libertine_public_ccache_PATH)"
+	mkdir -m 0755 -p "$path"
+	
+	case "$package" in
+		
+		build_*)
+			local envShaBang="$(libertine_public_PATH)"/env
+		;;
+		
+		*)
+			local envShaBang=/usr/bin/env
+		;;
+		
+	esac
+	
+	local prefix
+	for prefix in '' "$libertine_build"- "$libertine_host"-
+	do
+		local compiler
+		for compiler in cc "$libertine_cCompilerName" c++ "$libertine_cxxCompilerName"
+		do
+			local prefixedCompiler="${prefix}""${compiler}"
+			local binary="$path"/"$prefixedCompiler"
+			{
+				# Commented lines cause libiberty's configure to not detect headers such as stdlib.h or unistd.h - presumeably because it checks for stderr output
+				printf '#!%s sh\n' "$envShaBang"
+				#printf 'echo ccache: pwd: "$(pwd)" 1>&2\n'
+				#printf 'set -x 2>/dev/null\n'
+				printf 'exec ccache %s "$@" <&0\n' "$(libertine_public_PATH)"/"$prefixedCompiler"
+			} >"$binary"
+			chmod +x "$binary"
+		done
+	done
+	
+	export PATH="$path":"$PATH"
+}
+
+_libertine_public_make()
+{
+	local makeCommand="$1"
+	shift 1
+	
+	if core_variable_isSet libertine_public_libtool; then
+		local libtool="$libertine_public_libtool"
+	else
+		local libtool="clibtool-static"
+	fi
+	
+	$makeCommand "$libtool" "$@"
+}
+
+_libertine_public_make_command()
+{
+	local libtool="$1"
+	shift 1
+		
+	if [ -z "$libtool" ]; then
+		make -j "$maximumJobs" -l "$cpucount_makeLoadAverage" "$@"
+	else
+		# MAKE="make LIBTOOL='$libtool'"  causes problems for musl_cross_make
+		make -j "$maximumJobs" -l "$cpucount_makeLoadAverage" LIBTOOL="$libtool" "$@"
+	fi
+}
+
+_libertine_public_makeSerial_command()
+{
+	local libtool="$1"
+	shift 1
+	
+	if [ -z "$libtool" ]; then
+		make -j 1 "$@" 1>&2
+	else
+		make -j 1 LIBTOOL="$libtool" "$@" 1>&2
+	fi
+}
+
+_libertine_public_makeDebug_command()
+{
+	local libtool="$1"
+	shift 1
+	
+	if [ -z "$libtool" ]; then
+		make -j 1 --debug --trace "$@" 1>&2
+	else
+		# MAKE="make LIBTOOL='$libtool'"  causes problems for musl_cross_make
+		make -j 1 --debug --trace LIBTOOL="$libtool" "$@" 1>&2
+	fi
+}
+
+core_usesIn cpucount
+libertine_public_make()
+{
+	if $libertine_makeDebug; then
+		local makeCommand=_libertine_public_makeDebug_command
+	else
+		local makeCommand=_libertine_public_make_command
+		
+		if core_variable_isUnset cpucount_makeJobs; then
+			cpucount_computeMakeJobsAndLoadAverage 0 75
+		fi
+		
+		local maximumJobs=$((cpucount_makeJobs * 2))
+	fi
+	
+	_libertine_public_make "$makeCommand" "$@"
+}
+
+libertine_public_makeSerial()
+{
+	_libertine_public_make _libertine_public_makeSerial_command "$@"
+}
+
+core_dependency_requires '*' sed
+libertine_public_menuconfig_adjust()
+{
+	local name="$1"
+	local value="$2"
+	local isQuoted="$3"
+	
+	if [ $# -eq 4 ]; then
+		local configFilePath="$4"
+	else
+		local configFilePath="$(libertine_public_sourcePath)"/.config
+	fi
+	sed -i -e '/^# '"$name"' is not set$/d' "$configFilePath"
+	sed -i -e '/^'"$name"'=/d' "$configFilePath"
+	
+	if $isQuoted; then
+		printf '%s="%s"\n' "$name" "$value" >>"$configFilePath"
+	else
+		printf '%s=%s\n' "$name" "$value" >>"$configFilePath"
+	fi
+}
+
+core_dependency_requires '*' sed
+libertine_public_menuconfig_unset()
+{
+	local name="$1"
+	
+	if [ $# -eq 2 ]; then
+		local configFilePath="$2"
+	else
+		local configFilePath="$(libertine_public_sourcePath)"/.config
+	fi
+	sed -i -e '/^'"$name"'=/d' "$configFilePath"
+	printf '# %s is not set\n' "$name" >>"$configFilePath"
+}
+
+core_dependency_requires '*' grep
+libertine_public_menuconfig_hasConfigured()
+{
+	local name="$1"
+	local packageX="$2"
+	
+	grep -q '^'"$name"'=y$' "$(libertine_public_packagePath "$packageX")"/.config
+}
+
+libertine_public_menuconfig_installBusyboxRelatedFilesIfConfigured()
+{
+	local name="$1"
+	
+	if libertine_public_menuconfig_hasConfigured "$name" busybox; then
+		libertine_public_copy_filesystem "$(libertine_public_sourcePath)"/ "$(libertine_public_outputInitramfsPath)"/
+	fi
+}
+
+core_dependency_requires '*' mkdir cp
+libertine_public_autoconf_installPkgConfigM4Macro()
+{
+	mkdir -m 0755 -p "$(libertine_public_sourcePath)"/m4
+	cp "$(libertine_public_outputBuildSysrootPath build_pkg_config)"/usr/share/aclocal/pkg.m4 "$(libertine_public_sourcePath)"/m4
+}
+
+core_dependency_requires '*' sed
+libertine_public_autoconf_configHHeaderUndefine()
+{
+	local name="$1"
+	
+	sed -i -e '/^#define '"$name"' /d' "$(libertine_public_sourcePath)"/config.h
+}
+
+libertine_public_autoconf_configHHeaderRedefine()
+{
+	local name="$1"
+	local value="$2"
+	local quoted="$3"
+	
+	libertine_public_autoconf_configHHeaderUndefine "$name"
+	
+	if $quoted; then
+		local replacementValue='"'"$value"'"'
+	else
+		local replacementValue="$value"
+	fi
+	printf '#define %s %s\n' "$name" "$replacementValue" >>"$(libertine_public_sourcePath)"/config.h
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_installConfigHHeader()
+{
+	cp "$(libertine_public_packagePath)"/config.h "$(libertine_public_sourcePath)"
+}
+
+core_dependency_requires '*' sed
+libertine_public_autoconf_adjustConfigureAcToRemoveGnuTextCruftBeforeAutoconf()
+{
+	sed -i -e '/^AM_GNU_GETTEXT/d' -e '/po\/Makefile.in/d' configure.ac
+}
+
+libertine_public_autoconf_removePoToRemoveGnuTextCruftBeforeMake()
+{
+		rm -rf po
+		mkdir po
+		cat >po/Makefile <<EOF
+all:
+	echo "po all"
+
+install:
+	echo "po install"
+EOF
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfConfigSub()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_gnuconfig)"/config.sub "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfConfigGuess()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_gnuconfig)"/config.guess "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfConfigRpath()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_gnuconfig)"/config.rpath "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfConfigLibpath()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_gnuconfig)"/config.libpath "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfArLib()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/ar-lib "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfCompile()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/compile "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfDepcomp()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/depcomp "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfInstallSh()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/install-sh "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfMdateSh()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/mdate-sh "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfMissing()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/missing "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfMkinstalldirs()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/mkinstalldirs "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfTexinfoTex()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/texinfo.tex "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfCompile()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/compile "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfYlwrap()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_automake)"/ylwrap "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfLtmainSh()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_libtool)"/ltmain.sh "$destinationFolderPath"
+}
+
+core_dependency_requires '*' cp
+libertine_public_autoconf_replaceWithKnownVersionOfBootstrap()
+{
+	local destinationFolderPath="$1"
+	
+	cp -f "$(libertine_public_outputMiscPath build_gnulib)"/build-aux/bootstrap "$destinationFolderPath"
+}
+
+core_dependency_requires '*' rm mkdir
+libertine_public_autoconf_replaceWithKnownVersionOfGnulib()
+{
+	# eg "$(libertine_public_sourcePath)"/gnulib
+	local destinationFolderPath="$1"
+	
+	rm -rf "$destinationFolderPath"
+	mkdir -m 0755 -p "$destinationFolderPath"
+	
+	libertine_public_copy "$(libertine_public_outputMiscPath build_gnulib)"/. "$destinationFolderPath"
+}
+
+libertine_public_autoconf_modernAutoconfConfigureForBuild()
+{
+	_libertine_public_autoconf_modernAutoconfConfigure true "$@"
+}
+
+libertine_public_autoconf_modernAutoconfConfigure()
+{
+	local forBuild
+	case "$package" in
+
+		build_*)
+			forBuild=true
+		;;
+		
+		*)
+			forBuild=false
+		;;
+		
+	esac
+	
+	_libertine_public_autoconf_modernAutoconfConfigure "$forBuild" "$@"
+}
+
+core_dependency_requires '*' rm cp
+_libertine_public_autoconf_modernAutoconfConfigure()
+{
+	local forBuild="$1"
+	shift 1
+	
+	if $forBuild; then
+		local host="$libertine_build"
+	else
+		local host="$libertine_host"
+	fi
+	
+	libertine_public_adjustShaBang configure
+	
+	# Creates config.cache in PWD
+	libertine_configsite_create "$forBuild"
+	CONFIG_SITE="$(libertine_public_inputSysrootPath)"/etc/config.site ./configure -C --build="$libertine_build" --host="$host" "$@"	
+}
+
+core_dependency_requires '*' cat
+libertine_public_cmake_generateToolchainFile()
+{
+	_libertine_compile_createInputSysroot "$@"
+	
+	local compilerId='GNU'
+	
+	local toolchainFilePath="$(libertine_public_sourcePath)"/toolchain.cmake
+	
+	cat >"$toolchainFilePath" <<-EOF
+		set(CMAKE_SYSTEM_NAME Linux)
+		set(CMAKE_SYSTEM_VERSION 1)
+		set(CMAKE_SYSTEM_PROCESSOR "$libertine_hostCmakeProcessor")
+
+		set(CMAKE_FIND_ROOT_PATH "$(libertine_public_inputSysrootPath)")
+		set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+		set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+		set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+		set(CMAKE_SYSROOT "$(libertine_public_inputSysrootPath)")
+		set(CMAKE_STAGING_PREFIX "$(libertine_public_outputHostSysrootPath)")
+		
+		set(CMAKE_INSTALL_PREFIX "/usr")
+		
+		set(CMAKE_AR "${libertine_host}-ar")
+		
+		set(CMAKE_RANLIB "${libertine_host}-ranlib")
+		
+		set(CMAKE_LINKER "${libertine_host}-ld")
+		
+		set(BUILD_SHARED_LIBS OFF)
+		set(CMAKE_LINK_SEARCH_START_STATIC ON)
+		set(CMAKE_SKIP_RPATH OFF)
+		set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-Bstatic,-z,relro,-z,now")
+		set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+		
+		set(CMAKE_C_COMPILER_ID "$libertine_cmakeCompilerId")
+		set(CMAKE_C_COMPILER_VERSION "$libertine_cmakeCompilerVersion")
+		set(CMAKE_C_COMPILER_LAUNCHER "ccache")
+		set(CMAKE_C_COMPILER "${libertine_host}-cc")
+		set(CMAKE_C_FLAGS "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
+		set(CMAKE_C_FLAGS_DEBUG "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
+		set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
+		set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
+		set(CMAKE_C_FLAGS_MAINTAINER "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
+		
+		set(CMAKE_CXX_COMPILER_ID "$libertine_cmakeCompilerId")
+		set(CMAKE_CXX_COMPILER_VERSION "$libertine_cmakeCompilerVersion")
+		set(CMAKE_CXX_COMPILER_LAUNCHER "ccache")
+		set(CMAKE_CXX_COMPILER "${libertine_host}-c++")
+		set(CMAKE_CXX_FLAGS "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
+		set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
+		set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
+		set(CMAKE_CXX_FLAGS_MAINTAINER "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
+		
+		# //Flags used by the linker.
+		# CMAKE_EXE_LINKER_FLAGS:STRING=
+		#
+		# //Flags used by the linker during debug builds.
+		# CMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=
+		#
+		# //Flags used for linking binaries during maintainer builds.
+		# CMAKE_EXE_LINKER_FLAGS_MAINTAINER:STRING=-Wl,--warn-unresolved-symbols,--warn-once
+		#
+		# //Flags used by the linker during release minsize builds.
+		# CMAKE_EXE_LINKER_FLAGS_MINSIZEREL:STRING=
+		#
+		# //Flags used by the linker during release builds.
+		# CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
+		#
+		# //Flags used by the linker during Release with Debug Info builds.
+		# CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
+		
+		set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+		
+		set(CMAKE_BUILD_TYPE Release)
+	EOF
+	
+	case "$libertine_cmakeCompilerId" in
+		
+		clang|qcc)
+			cat >"$toolchainFilePath" <<-EOF
+				set(CMAKE_C_COMPILER_TARGET "$libertine_host")
+				set(CMAKE_CXX_COMPILER_TARGET "$libertine_host")
+			EOF
+		;;
+		
+	esac
+}
+
+libertine_public_cmake_addOption()
+{
+	local optionName="$1"
+	local optionValue="$2"
+	local type="$3"
+
+	local quoted=true
+	local force=' FORCE'
+	case "$type" in
+		
+		BOOL)
+			quoted=false
+		;;
+		
+		INTERNAL)
+			force=''
+		;;
+		
+	esac
+	
+	local cmakeConfigurationFilePath="$(libertine_public_sourcePath)"/"$package".cache.configuration.cmake
+	
+	if $quoted; then
+		printf 'set(%s "%s" CACHE %s "docstring"%s)\n' "$optionName" "$optionValue" "$type" "$force" >>"$cmakeConfigurationFilePath"
+	else
+		printf 'set(%s %s CACHE %s "docstring"%s)\n' "$optionName" "$optionValue" "$type" "$force" >>"$cmakeConfigurationFilePath"
+	fi
+}
+
+core_dependency_requires '*' cat sh
+libertine_public_cmake()
+{
+	# We generate a command to make it easier to debug
+	local commandFilePath="$(libertine_public_sourcePath)"/"$package".cmake.sh
+	cat >"$commandFilePath" <<-EOF
+		set -u
+		set -e
+		set -f
+		IFS=''
+		export PATH='$PATH'
+		cd '$(libertine_public_sourcePath)' 1>/dev/null 2>/dev/null
+		exec cmake -C ./$package.cache.configuration.cmake -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=./toolchain.cmake -Wno-error=dev -Wno-deprecated -Wno-error=deprecated
+	EOF
+	
+	sh "$commandFilePath"
+}
+
+core_dependency_requires '*' mkdir cp
+libertine_public_installAndStripBinariesIn()
+{
+	local folderName="$1"
+	shift 1
+	
+	local destinationFolderPath="$(libertine_public_outputInitramfsPath)"/usr/"$folderName"
+	
+	mkdir -m 0755 -p "$destinationFolderPath"
+	
+	local executable
+	for executable in "$@"
+	do
+		local destinationExecutableFilePath="$destinationFolderPath"/"$executable"
+		cp "$(libertine_public_outputHostSysrootPath)"/usr/"$folderName"/"$executable" "$destinationFolderPath"
+		${libertine_host}-strip "$destinationExecutableFilePath"
+	done
+}

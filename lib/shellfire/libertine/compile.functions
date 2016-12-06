@@ -1,0 +1,385 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+core_usesIn libertine public
+
+
+_libertine_compile_pathsPATH()
+{
+	libertine_public_PATH "$@"
+}
+
+core_dependency_requires '*' mkdir cp
+_libertine_compile_copySourcePath()
+{
+	local originalPackagePath="$(libertine_public_originalPackagePath)"
+	
+	local packagePath="$(libertine_public_packagePath)"
+	
+	
+	if [ -z "$copy_subset" ]; then
+		mkdir -m 0755 -p "$packagePath"
+		cp -a -f -H "$originalPackagePath"/. "$packagePath"/
+	else
+		mkdir -m 0755 -p "$packagePath"
+		cp "$originalPackagePath"/"$package".functions "$packagePath"
+		
+		IFS=' ' set -- $copy_subset
+		local relativePath
+		for relativePath in "$@"
+		do
+			mkdir -m 0755 -p "$packagePath"/"$relativePath"
+			cp -a -f -H "$originalPackagePath"/"$relativePath"/. "$packagePath"/"$relativePath"/
+		done
+	fi
+}
+
+core_dependency_requires '*' cat
+_libertine_compile_installMenuConfigIfPresent()
+{
+	local configFilePath="$(libertine_public_packagePath)"/"$package".mk
+	local packageConfigFilePath="$libertine_machinePackageConfigurationsFolderPath"/"$package".mk
+	
+	if [ -s "$packageConfigFilePath" ]; then
+		core_message NOTICE "  ${_libertine_compile_depth}Installing menuconfig (override)"
+		cat "$packageConfigFilePath" >"$(libertine_public_sourcePath "$package" "$variant")"/.config
+	elif [ -s "$configFilePath" ]; then
+		core_message NOTICE "  ${_libertine_compile_depth}Installing menuconfig (default)"
+		cat "$configFilePath" >"$(libertine_public_sourcePath "$package" "$variant")"/.config
+	fi
+}
+
+_libertine_compile_sourcePackageConfig()
+{
+	local packageConfigFilePath="$libertine_machinePackageConfigurationsFolderPath"/"$package".config
+	if [ -f "$packageConfigFilePath" ]; then
+		core_message NOTICE "  ${_libertine_compile_depth}Sourcing package config"
+		{
+			printf '*** Sourcing package config ***\n'
+			printf '*** Sourcing package config ***\n' 1>&2
+			. "$packageConfigFilePath"
+			printf '*** Done Sourcing package config ***\n\n\n'
+			printf '*** Done Sourcing package config ***\n\n\n' 1>&2
+		} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
+	fi
+}
+
+core_dependency_requires '*' cp
+_libertine_compile_patchIfPresent()
+{
+	local patchesFilePath="$(libertine_public_packagePath)"/"$package".patches
+	if [ -s "$patchesFilePath" ]; then
+				
+		core_message NOTICE "  ${_libertine_compile_depth}Patching using '$package.patches'"
+		pushd "$(libertine_public_sourcePath)"
+		
+			{
+				printf '*** Patching ***\n'
+				printf '*** Patching ***\n' 1>&2
+				. "$patchesFilePath" "$variant" "$(libertine_public_packagePath)"/patches
+				printf '*** Done Patching ***\n\n\n'
+				printf '*** Done Patching ***\n\n\n' 1>&2
+			} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
+		
+		popd
+	fi
+}
+
+core_usesIn libertine configsite
+core_dependency_requires '*' rm mkdir
+_libertine_compile_createInputSysroot()
+{
+	local inputSysrootPath="$(libertine_public_inputSysrootPath)"
+		
+	# Make folders necessary for pkgconfig
+	mkdir -m 0755 -p "$inputSysrootPath"/usr/lib/pkgconfig "$inputSysrootPath"/usr/share/pkgconfig
+	
+	# Make folders necessary for libtool LT_SYS_LIBRARY_PATH
+	mkdir -m 0755 -p "$inputSysrootPath"/usr/lib
+		
+	libertine_env_resetAfterNewInputSysroot "$inputSysrootPath"
+}
+
+core_dependency_requires '*' git
+core_dependency_requires '*' find xargs stat sha512sum sort awk rm
+_libertine_compile_folderHashValue()
+{
+	local folderPath="$1"
+	
+	if [ ! -d "$folderPath" ]; then
+		# SHA-512 for an empty file
+		printf 'sha512:'
+		printf 'f83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e\n'
+		return 0
+	fi
+	
+	pushd "$folderPath"
+		
+		if git log --max-count=1 --pretty=format:%H -- . 1>/dev/null 2>/dev/null; then
+			
+			printf 'git:'
+			git log --max-count=1 --pretty=format:%H -- .
+			git diff --cached .
+			
+		else
+			
+			local TMP_FILE
+			core_temporaryFiles_newFileToRemoveOnExit
+			local hashesFilePath="$TMP_FILE"
+		
+			{
+				# -mindepth 1 excludes '.'
+			
+				# File system structure
+				find . -mindepth 1 ! -name .git -print0 | xargs -0 -r stat -c '%N %a %s %T %t %F'
+			
+				# File contents
+				find . -mindepth 1 ! -name .git -type f -print0 | xargs -0 -r sha512sum
+			
+				# Contents, if any, of symlinks to files, otherwise errors (as a symlink may change from pointing to a file to a folder to an invalid location, etc)
+				find . -mindepth 1 ! -name .git -type l -print0 | xargs -0 -r sha512sum 2>&1 || true
+		
+			} | sort >>"$hashesFilePath"
+		
+			printf 'sha512:'
+			sha512sum "$hashesFilePath" | awk '{print $1}'
+	
+			# Cleaned up by exit, but can be quite large
+			rm -rf "$hashesFilePath"
+			
+		fi
+		
+	popd
+}
+
+_libertine_compile_buildHash()
+{
+	printf '%s %s\n' "$package" "$(_libertine_compile_folderHashValue "$(libertine_public_originalPackagePath)")"
+	printf '%s %s\n' "$package".config "$(_libertine_compile_folderHashValue "$libertine_machinePackageConfigurationsFolderPath"/"$package")"
+}
+
+core_dependency_requires '*' cat
+_libertine_compile_buildDependencyHash()
+{
+	local package="$core_variable_array_element"
+	
+	cat "$(libertine_public_outputHashPath "$package")"
+}
+
+_libertine_compile_buildDependency()
+{
+	local parentPackage="$package"
+	local package="$core_variable_array_element"
+	
+	_libertine_compile_doIt "$package" "$parentPackage"
+}
+
+_libertine_compile_buildDependencyLinux()
+{
+	local package="$core_variable_array_element"
+	
+	core_variable_array_appendUniquely _libertine_compile_depends "$package"
+}
+
+_libertine_compile_dependOnEverythingBuiltIfLinux()
+{
+	if [ "$package" = 'linux' ]; then
+		core_variable_array_iterate _libertine_compile_built _libertine_compile_buildDependencyLinux
+	fi
+}
+
+core_usesIn libertine env
+core_dependency_requires '*' cat rm chmod mkdir
+_libertine_compile_doIt()
+{
+	local package="$1"
+	local parentPackage="$2"
+	
+	if [ "$package" = '(none)' ]; then
+		core_exitError $core_commandLine_exitCode_CONFIG "A package can not be called '(none)'"
+	fi
+	
+	if core_variable_array_contains _libertine_compile_built "$package"; then
+		core_message NOTICE "${_libertine_compile_depth}Already built package '$package'"
+		return 0
+	else
+		core_message NOTICE "${_libertine_compile_depth}Examining package '$package'"
+		local _libertine_compile_depth="${_libertine_compile_depth}  "
+	fi
+	
+	local variant='latest'
+	local copy_subset=''
+	
+	local _libertine_compile_depends
+	local _libertine_compile_depends_initialised
+	core_variable_array_initialise _libertine_compile_depends
+	local _libertine_compile_buildBinariesNeeded
+	local _libertine_compile_buildBinariesNeeded_initialised
+	core_variable_array_initialise _libertine_compile_buildBinariesNeeded
+	local _libertine_compile_buildBinariesProvided
+	local _libertine_compile_buildBinariesProvided_initialised
+	core_variable_array_initialise _libertine_compile_buildBinariesProvided
+	
+	local functionsFilePath="$(libertine_public_originalPackagePath)"/"$package".functions
+	
+	if [ ! -f "$functionsFilePath" ]; then
+		if [ ! -d "$(libertine_public_originalPackagePath)" ]; then
+			core_exitError $core_commandLine_exitCode_CONFIG "The package '$package' does not exist (at '$(libertine_public_originalPackagePath)'); required by package '$parentPackage'"
+		fi
+		
+		core_exitError $core_commandLine_exitCode_CONFIG "The package '$package' file '$package.functions', does not exist; required by package '$parentPackage'"
+	fi
+	
+	local hasCompileFunction=false
+	
+	if [ -s "$functionsFilePath" ]; then
+		. "$functionsFilePath"
+		
+		if ! core_functions_exists libertine_compile_${package}; then
+			core_exitError $core_commandLine_exitCode_CONFIG "The package '$package' has a '$package.functions' that does not contain a function 'libertine_compile_${package}'"
+		fi
+		
+		hasCompileFunction=true
+	fi
+	
+	
+	_libertine_compile_dependOnEverythingBuiltIfLinux
+	
+	# Compile dependencies if not already built
+	core_variable_array_iterate _libertine_compile_depends _libertine_compile_buildDependency
+	
+	local outputBuiltPath="$(libertine_public_outputHashPath)"
+	
+	core_message NOTICE "${_libertine_compile_depth}Calculating hash for package '$package'"
+	local TMP_FILE
+	core_temporaryFiles_newFileToRemoveOnExit
+	local packageHashFilePath="$TMP_FILE"
+	{
+		_libertine_compile_buildHash
+		cat $libertine_machineHashFilePath
+		core_variable_array_iterate _libertine_compile_depends _libertine_compile_buildDependencyHash
+	} | sort -u >"$packageHashFilePath"
+	
+	if [ -f "$outputBuiltPath" ]; then
+		if diff -a -q "$outputBuiltPath" "$packageHashFilePath" 1>/dev/null; then
+			core_message NOTICE "${_libertine_compile_depth}No need to rebuild package '$package'"
+			
+			libertine_path_installBuildBinariesProvided
+	
+			core_variable_array_appendUniquely _libertine_compile_built "$package"
+			rm -rf "$packageHashFilePath"
+			return 0
+		fi
+	fi
+	
+	core_message NOTICE "${_libertine_compile_depth}Need to rebuild package '$package'"
+	rm -rf "$outputBuiltPath"
+	
+	if [ -e "$(libertine_public_outputPath)" ]; then
+		core_message NOTICE "${_libertine_compile_depth}Deleting previous build output for package '$package'"
+		chmod -R 0777 "$(libertine_public_outputPath)"
+		rm -rf "$(libertine_public_outputPath)"
+	fi
+	
+	core_message NOTICE "${_libertine_compile_depth}Copying source for package '$package'"
+	_libertine_compile_copySourcePath
+	
+	core_message NOTICE "${_libertine_compile_depth}Creating input sysroot for package '$package'"
+	_libertine_compile_createInputSysroot
+	
+	core_message NOTICE "${_libertine_compile_depth}Miscellaneous preparations before building package '$package'"
+	mkdir -m 0755 -p "$(libertine_public_outputMiscPath)"
+	mkdir -m 0755 -p "$(libertine_public_outputBuildSysrootPath)"
+	mkdir -m 0755 -p "$(libertine_public_outputHostSysrootPath)"
+	mkdir -m 0755 -p "$(libertine_public_outputInitramfsPath)"
+	printf '' >"$(libertine_public_outputInitramfsContentsFilePath)"
+	printf '' >"$(libertine_public_outputKernelBootCommandLineFilePath)"
+	libertine_env_cleanseBeforePackageCompile
+	
+	local logFolderPath="$(libertine_public_outputPath)"
+	
+	core_message NOTICE "${_libertine_compile_depth}Building package '$package' variant '$variant' (logs in '$logFolderPath')"
+	
+	# Change environment variable PATH
+	libertine_path_exportPATH
+	
+		# These functions run under a modified path, eg to make patch use one we built via build_netbsd_src_patch
+		_libertine_compile_installMenuConfigIfPresent
+		_libertine_compile_sourcePackageConfig
+		_libertine_compile_patchIfPresent
+		libertine_public_adjustShaBangAllFilesInPath "$(libertine_public_packagePath)"
+		
+		if $hasCompileFunction; then
+			core_message INFO "    ${_libertine_compile_depth}Running build function 'libertine_compile_${package}'"
+			set -e
+			libertine_compile_${package} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
+		fi
+	
+	# Restore PATH
+	export PATH="$libertine_originalPATH"
+	
+	# Record build details
+	mv "$packageHashFilePath" "$(libertine_public_outputHashPath)"
+	
+	core_variable_array_appendUniquely _libertine_compile_built "$package"
+	
+	libertine_path_installBuildBinariesProvided
+}
+
+core_usesIn libertine path
+libertine_compile_configure()
+{
+	_libertine_compile_depth=''
+	core_variable_array_initialise _libertine_compile_built
+	core_variable_array_initialise _libertine_packages
+	
+	local package
+	while IFS='' read -r package
+	do
+		if [ -z "$package" ]; then
+			continue
+		fi
+		
+		case "$package" in
+			
+			'')
+				continue
+			;;
+			
+			'#'*)
+				continue
+			;;
+			
+			*)
+				if [ ! -d "$libertine_machineInputPackagesPath"/"$package" ]; then
+					core_exitError 1 "Package '$package' does not exist in folder '$libertine_machineInputPackagesPath'"
+				fi
+			
+				core_variable_array_appendUniquely _libertine_packages "$package"
+			;;
+			
+		esac
+		
+	done <"$libertine_machineSettingsFolderPath"/packages.list
+}
+
+core_dependency_requires '*' rm cp
+libertine_compile()
+{
+	core_message NOTICE STARTING
+	
+	libertine_public_packages()
+	{
+		local package="$core_variable_array_element"
+		_libertine_compile_doIt "$package" '(none)'
+	}
+	core_variable_array_iterate _libertine_packages libertine_public_packages
+	_libertine_compile_doIt linux '(none)'
+	
+	local kernelOutputFilePath="$libertine_machineOutputFolderPath"/libertine-linux.vmlinuz
+	rm -rf "$kernelOutputFilePath"
+	cp "$(libertine_public_outputMiscPath linux)"/vmlinuz "$kernelOutputFilePath"
+	
+	core_message NOTICE FINISHED
+}

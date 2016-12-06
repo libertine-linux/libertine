@@ -1,0 +1,233 @@
+1. GNU 'Build System' (sic) copy'n'pasted files to sort out with 'master' copies
+1.1 Need fixing
+- ylwrap [could master based on that in automake]
+- update-copyright
+- useless-if-before-free
+- gnupload
+- ?gitlog-to-changelog (see automake/lib)
+- compile (first found in gnulib/source/build-aux) [used a lot]
+- texi2dvi (first found in bash/support) [seems to be used in gdb, texi
+- texi2html (first found in bash/support) [seems to be used in gdb, gettext]
+- rlvers.sh (first found in bash/support), seems readline-related [seems to be used in gdb's readline]
+- mkdirs (first found in bash/support) [seems to be used in gdb's readline]
+
+1.2 Problematic for reproducibility
+- install-sh inside ccache
+- likewise for dependencies for musl-cross-make (eg in binutils, gmp, gcc, etc)
+
+1.3 Do not need fixing yet (only found in bash/support)
+- printenv.sh
+- mkclone
+- fixlinks
+- mkversion.sh
+
+2. Duplicated libraries
+2.1 One Solution is to use the idea of a 'source' package, eg 'source_zlib' and then copy into dependencies, as we can't build zlib for ccache or gcc in advance
+2.2 Occurrences
+	- zlib (seems to be in ccache, zlib, gcc, rsync and other locations)
+		- version in rsync differs slightly from upstream so '-z' might not work when interoperating with non-Libertine Linux systems
+2.3 Might become occurrences
+	- readline in bash
+	- termcap in bash
+	- intl (gettext) in bash
+	- popt in rsync
+	- libev in audit_userspace
+
+3. Networking
+
+3.1 Further combines
+	- resolv.conf (challenging)
+	- nftables firewall
+
+3.2 Check current creation, consider making part of pre cpio archive creation modification
+	- /etc/hostname
+	- /etc/dnsdomainname
+
+4. Start up
+	- hwclock on start up / shutdown
+	- nftables
+	- combine of inittab?
+	- Add support for udhcpd daemon
+	- Support for getting a random seed from random.org
+
+5. Packages to do
+
+5.1 Broken
+	autoconf213 and autoconf264 collide with autoconf
+	audit_userspace does not support arm / arm64 (./configure switches need enabling if arm arch is detected)
+
+5.2 Partly Done
+	libertine_filesystem
+		- Replace /usr/sbin/bridge.if-pre-up
+
+5.3 Todo
+	hitch / stunnel
+	libseccomp
+		- needed for rust
+	gcc / g++ as a system compiler
+	gpg v.1.x or 2?
+	a rust compiler
+	glibc compilation for stuff so broken it can only use glibc
+		- eg rust's official packages
+		- third party binaries
+	openldap
+		- libraries for sudo
+		- libraries for openssh
+
+5.4 For diagnostics
+	dmidecode
+	hwloc
+	lshw - http://www.ezix.org/project/wiki/HardwareLiSter#Download  https://ezix.org/src/pkg/lshw
+	? lscpu - part of util-linux
+
+5.5 Probably not
+	* acct (process accounting, http://www.gnu.org/software/acct/)
+		* Seems unnecessary with auditd / auditctl
+
+6. ZFS
+	- initialisation scripts need to detect if formatting required
+	- configuration of pool with a given set of virtual devices
+	- could be policy based (number of devices) or we just pick a default set of choices
+	- Provide a way for packages to signal the need for a persistent storage location
+	- examine what's needed to work with rsync.net's zfs send / receive
+		- rsync.net has always had a "HN readers discount" which is quite substantial. Just email info@rsync.net and ask about it.
+		- http://arstechnica.com/information-technology/2015/12/rsync-net-zfs-replication-to-the-cloud-is-finally-here-and-its-fast/
+			- syncoid is sadly written in perl
+
+6.1 Backups
+	- explore using <https://borgbackup.readthedocs.io/en/stable/#> borg with rsync.net
+	- sadly written in Python with a self-installer
+	- also http://www.stavros.io/posts/holy-grail-backups/
+	- explore tarsnap, too
+
+7. Support installation via Grub2 / syslinux / lilo / whatever
+	- boot vis BIOS from disk
+	- boot via EFI from disk
+	- boot via EFI shell
+	- boot via EFI http:// download
+		- http://ipxe.org/appnote/uefihttp
+		- Needs UEFI 2.5, eg OVMF with HTTP_BOOT
+		- iPXE
+	- qemu / UEFI
+		- OVMF https://wiki.ubuntu.com/UEFI/OVMF
+	- 'boot' via Docker
+	- 'boot' via chroot
+
+7.1 iPXE Chainloading
+	* Unflashed, vanilla BIOS with vanilla PXE ROM
+		* Chainload undionly.kpxe which has been custom built and embeds a single HTTPS URL from which we retrieve an iPXE script
+		* Need to be able to customise the HTTPS URL
+		* Need to be able to generate a dnsmasq entry
+		* Embed our cert.pem
+		* Serve it using TFTP
+		* Configure DHCP (eg dnsmasq) to provide this in DHCP options
+		* http://ipxe.org/howto/chainloading
+	* Flashed PXE ROM / modified BIOS
+		* As above, but undionly.kpxe has been flashed into the BIOS / Network Card ROM; much more secure
+	* Vultr
+		* Provide an URL to an iPXE script; this may need to use HTTP (not sure)
+		* <https://www.vultr.com/docs/ipxe-boot-feature>
+	* UEFI legacy
+		* Build a custom `ipxe.efi` (1)
+		* Serve it using TFTP
+		* Configure DHCP (eg dnsmasq) to provide this in DHCP options
+		* http://ipxe.org/howto/chainloading
+		* Very similar
+	* UEFI 2.5+, eg OVMF with HTTP_BOOT
+		* Configure DHCP to recognise
+		* Serve it using a webserver over HTTP (!)
+		* Binary `.efi` is the same as the above `ipxe.efi` (1)
+		* <http://ipxe.org/appnote/uefihttp>
+	* Build iPXE as part of UEFI firmware...
+	* Linux UEFI boot - should work as an alternative to UEFI legacy and UEFI 2.5+
+
+8. Security
+
+8.1 Add libressl ssl_helper for wget
+8.2 Encryption of cpio archive files with decryption at boot
+	- Use ecryptfs https://wiki.archlinux.org/index.php/ECryptfs ?
+	- Store the majority of the archive as a binary .img file, which we mount and pivot_root over?
+	- See  ecryptfs-simple
+	- Because of the way thngs work, we'd need either to leave busybox unencrypted or create two copies of it
+	- dm-crypt
+	- EncFS isn't really an option, as it exposes metadata and needs FUSE
+8.3 ?dnscrypt-proxy with a local DNS cache
+8.4 LDAP local cache for sudo and SSH logins, possibly console logins (but would seem to need PAM)
+8.5 local forwarding mail server, so avoid DoS if mail service goes down
+8.7 Randomness To Do
+	- Save the random seed to pstore? or EFI?
+	- ~~Use Ubuntu's pollinate~~ pollinate client is tightly coupled to dpkg and reveals too much about the host system
+	- tpm-tools
+	- random number entropy from a USB key
+		- http://pastebin.com/cvHkE1GC is a busybox patch that adds rngd
+8.8 Kernel Security Module support
+	- Apparmour or one of SMACK, TOYO or SELinux
+8.9 Apply ACLs, Attrs, and File Capabilities at start up
+	- use a combined list
+8.12 Review https://wiki.ubuntu.com/Security/Features
+8.13 How can we use PAX / Grsec now they are commercial only?
+8.14 Enable acct
+8.15 Add Prelude IDS support to audit_userspace `./configure --with-prelude` (http://www.prelude-siem.com/en/products/prelude-oss/) / https://www.prelude-siem.org/projects/prelude/files
+	- check vs snort and other IDS...
+8.16 Add libcap-ng to audit_userspace
+8.17 Review auditd recommendations in https://serverfault.com/questions/470755/log-all-commands-run-by-admins-on-production-servers/475134#475134
+8.18 Fix the use of --enable-default-pie
+	- breaks
+		- ZFS
+		- OpenSSH ssh-keygen
+		- the *build* version of gcc 5.3.0 (not host)
+	- See Christian Seiler's comment here https://groups.google.com/forum/#!topic/linux.debian.devel/bca6RlraSgw for good insight on PIC and PIE and statics
+8.19 audit=1 => need to pass arguments to kernel command line
+
+
+9. Misc
+- Modify https://en.wikipedia.org/wiki/List_of_Linux_distributions_that_run_from_RAM
+
+
+
+10. Compiling on Mac OS X:-
+
+- https://stackoverflow.com/questions/10018764/building-linux-kernel-on-mac-os-x#10020483
+- If we could get a `ld` that worked we might be able to get somewhere (somehow musl-cross-make works via brew)
+- And a busybox for Mac OS X
+- Need libelf, gsed, etc; we could use brew to bootstrap
+
+brew install libelf
+brew install gnu-sed
+brew sh
+rm -rf TEMP
+mkdir TEMP
+cat <<EOT >> TEMP/elf.h
+#include "libelf/gelf.h"
+#define R_386_NONE 0
+#define R_386_32 1
+#define R_386_PC32 2
+#define R_ARM_NONE 0
+#define R_ARM_PC24 1
+#define R_ARM_ABS32 2
+#define R_MIPS_NONE 0
+#define R_MIPS_16 1
+#define R_MIPS_32 2
+#define R_MIPS_REL32 3
+#define R_MIPS_26 4
+#define R_MIPS_HI16 5
+#define R_MIPS_LO16 6
+#define R_IA64_IMM64 0x23 /* symbol + addend, mov imm64 */
+#define R_PPC_ADDR32 1 /* 32bit absolute address */
+#define R_PPC64_ADDR64 38 /* doubleword64 S + A */
+#define R_SH_DIR32 1
+#define R_SPARC_64 32 /* Direct 64 bit */
+#define R_X86_64_64 1 /* Direct 64 bit */
+#define R_390_32 4 /* Direct 32 bit. */
+#define R_390_64 22 /* Direct 64 bit. */
+#define R_MIPS_64 18
+EOT
+touch TEMP/byteswap.h
+touch TEMP/endian.h
+
+# Specifying ARCH is very important; Mac OS X uname reports the system as i686 which breaks the build
+
+ARCH=arm64
+make clean
+PATH="$(brew --prefix gnu-sed)"/libexec/gnubin:"$PATH" make -j 1 ARCH="$ARCH" INSTALL_HDR_PATH=./TEMP headers_install HOSTCFLAGS="-ITEMP -I $(brew --prefix libelf)/include"
+

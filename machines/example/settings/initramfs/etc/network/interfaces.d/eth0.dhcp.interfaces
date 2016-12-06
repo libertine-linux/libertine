@@ -1,0 +1,12 @@
+auto eth0
+
+iface eth0 inet dhcp
+#hostname machine
+#client client-id
+#script script to run after udhcpc
+
+iface eth0 inet static
+#address 10.211.55.29
+#netmask 255.0.0.0
+#gateway 10.211.55.1
+

@@ -1,0 +1,3 @@
+excludeFilesInBrowser = "{$excludeFilesInBrowser,._*}"
+excludeInFolderSearch = "{$excludeInFolderSearch,var/lib}"
+excludeInFileChooser = "{$exclude,$excludeInFolderSearch}"
