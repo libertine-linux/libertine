@@ -108,7 +108,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* ~NFTables Firewalls~ (and hence legacy iftables)
 	* By default, we use a large list of known spam, etc hosts and block them with duff entries in `/etc/hosts`.
 * The set of software packages and their configuration for a machine, are just plain text files and so are easy to store in source control
-	* All files like `/etc/hosts` are created at init time from snippets in folders like `/etc/hosts.d/*.hosts`
+	* All files like `/etc/hosts` are created at compile time from snippets in folders like `/etc/hosts.d/*.hosts`
 		* No need to ever edit them
 		* Different packages can contribute different snippets
 		* This allows configuration to be 'built up'
@@ -191,12 +191,26 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 		* `/etc/network/ifplugd/link-error.d`
 		* `/etc/network/iproute2/rt_dsfield` (note there is no trailing `.d`)
 		* `/etc/network/iproute2/rt_realms` (note there is no trailing `.d`)
-	* The following are not yet quite as we would like
-		* `/etc/network/interfaces` - the file 01eth0.libertine_filesystem.interfaces is in the wrong package
+* Random entropy is increased at boot time by downloading (over https) from random.org
+	* We do not use Ubuntu's pollinate service as it is far too Ubuntu-specific
+	* We would like to add support for tpm-tools
+	* Where possible, grsecurity is used to increase kernel entropy
+* Language choices and preferences
+	* For today: C, or C++ if we have to
+	* For the future: Rust and, if we have to, Go
+	* For everthing requiring glue: POSIX sh (not bash)
+	* For complex or performant scripting: Lua (as LuaJIT)
+	* Just come with too many issues and complexity creating insecurity: Legacy cruft like Perl or M4, horrible like JavaScript or PHP, difficult to deploy like Python or just uggh, Ruby
+		* Note that perl and m4 are implicitly used becayse building Linux and anything using Autocruft needs them
 
 ### Use Cases
 
 * Servers
+	* OpenLDAP
+	* OpenSMTPD
+	* DNS (dnsmasq and dnsd)
+	* MQTT
+	* Basic HTTP with shell scripting out of the box (note: basic sh, not bash, but not useful for more than basic infrastructure automation although it is also be possible to use Lua via LuaJIT)
 * Embedded Devices
 * Internet of Things Appliances
 
@@ -301,7 +315,7 @@ That's it.
 	* Can use /etc/network/interfaces.d
 	* Can also use /etc/network/staticroutes.d
 
-#### Files not copied to rootfs
+#### Files not copied to initram (rootfs)
 
 * `.DS_Store`, `.gitignore` (but containing folders are), `._*` (a Mac OS X ism from using NFS)
 * Anything ending `.disabled`
@@ -331,3 +345,30 @@ The following unsupported daemons may be supported if a reasonable use case is f
 ## License
 
 The license for this project is MIT. Individual files and, of course, upstream sources and packages, may be covered by other (open source currently) licenses. Much gratitude is expressed for the authors of all the code contained in Libertine Linux, and particularly for the original work made by the authors of Alpine Linux, without known of whom this would have not been possible.
+
+
+## Packages
+
+### To Document
+
+* `variant`
+* `copy_subset`
+* `libertine_public_libtool`
+* `depends`
+* `build_needs`
+* `build_provides`
+	* Not checked until after build finished
+* `libertine_compile_<packageName>`
+	* `<packageName>` must be A-Z a-Z 0-9 and underscore
+* Layout, copying of files
+	* `misc` `input-sysroot`, `initramfs`, `initramfs.contents`
+* Special handling of `build_` packages
+* Function documentation
+* How PATHS and ccache work
+* Machine hashes
+* Machine configuration (.config and .mk (menuconfig))
+* Application of patches
+
+### Not supported
+* Circular dependencies (and not detected)
+* Package conflicts (eg autoconf264 and autoconf)

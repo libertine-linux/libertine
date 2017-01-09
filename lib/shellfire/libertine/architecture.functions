@@ -25,14 +25,26 @@ libertine_architecture_setHost()
 			libertine_hostShorter='x86_64-linux-musl'
 			libertine_hostIsBigEndian='false'
 			libertine_hostIs64Bit=true
+			
+			# https://golang.org/doc/install/source#environment
+			libertine_hostGo='amd64'
 		;;
 		
 		# arm)
 		# 	libertine_hostLinux='arm'
 		#
+		#	libertine_hostForMuslLd='ld-linux-armhf.so.3'
 		#
 		# 	libertine_hostIsBigEndian='false'
 		# 	libertine_hostIs64Bit='false'
+		#	libertine_hostGo='arm'
+		#	libertine_hostGoArm='7'  # 5, 6 or 7
+		# ;;
+		#
+		# mips*)
+		#
+		# 	libertine_hostForMuslLd="ld.so.1"
+		#
 		# ;;
 		#
 		# aarch64)
@@ -41,7 +53,13 @@ libertine_architecture_setHost()
 		#
 		# 	libertine_hostIsBigEndian='false'
 		# 	libertine_hostIs64Bit='true'
+		#	libertine_hostGo='arm64'
 		# ;;
+		#
+		# x86)
+		#	libertine_hostForMuslLd="ld-linux.so.2"
+		#	libertine_hostGo='386'
+		#	libertine_hostGo386='sse2' # 387 or sse2
 		
 		*)
 			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) host architecture '$architecture"
@@ -69,6 +87,9 @@ libertine_architecture_setBuild()
 			libertine_buildShorter='x86_64-linux-musl'
 			libertine_buildIsBigEndian='false'
 			libertine_buildIs64Bit='true'
+			
+			libertine_buildGoHostOs='linux'
+			libertine_buildGoHostArch='amd64'
 		;;
 		
 		# arm)

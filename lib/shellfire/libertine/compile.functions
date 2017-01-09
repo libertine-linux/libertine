@@ -2,13 +2,8 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-core_usesIn libertine public
+core_usesIn libertine public git
 
-
-_libertine_compile_pathsPATH()
-{
-	libertine_public_PATH "$@"
-}
 
 core_dependency_requires '*' mkdir cp
 _libertine_compile_copySourcePath()
@@ -17,13 +12,11 @@ _libertine_compile_copySourcePath()
 	
 	local packagePath="$(libertine_public_packagePath)"
 	
-	
 	if [ -z "$copy_subset" ]; then
 		mkdir -m 0755 -p "$packagePath"
 		cp -a -f -H "$originalPackagePath"/. "$packagePath"/
 	else
 		mkdir -m 0755 -p "$packagePath"
-		cp "$originalPackagePath"/"$package".functions "$packagePath"
 		
 		IFS=' ' set -- $copy_subset
 		local relativePath
@@ -54,7 +47,7 @@ _libertine_compile_sourcePackageConfig()
 {
 	local packageConfigFilePath="$libertine_machinePackageConfigurationsFolderPath"/"$package".config
 	if [ -f "$packageConfigFilePath" ]; then
-		core_message NOTICE "  ${_libertine_compile_depth}Sourcing package config"
+		core_message NOTICE "  ${_libertine_compile_depth}Package '$package' sourcing config"
 		{
 			printf '*** Sourcing package config ***\n'
 			printf '*** Sourcing package config ***\n' 1>&2
@@ -101,62 +94,77 @@ _libertine_compile_createInputSysroot()
 	libertine_env_resetAfterNewInputSysroot "$inputSysrootPath"
 }
 
-core_dependency_requires '*' git
 core_dependency_requires '*' find xargs stat sha512sum sort awk rm
-_libertine_compile_folderHashValue()
+_libertine_compile_hashValue()
 {
-	local folderPath="$1"
+	local path="$1"
 	
-	if [ ! -d "$folderPath" ]; then
-		# SHA-512 for an empty file
-		printf 'sha512:'
-		printf 'f83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e\n'
+	if [ ! -e "$path" ]; then
+		printf 'other missing\n'
+		return 0
+	fi
+		
+	if [ -f "$path" ]; then
+		printf 'sha512-file %s\n' "$(sha512sum "$path" | awk '{print $1}')"
 		return 0
 	fi
 	
-	pushd "$folderPath"
-		
-		if git log --max-count=1 --pretty=format:%H -- . 1>/dev/null 2>/dev/null; then
-			
-			printf 'git:'
-			git log --max-count=1 --pretty=format:%H -- .
-			git diff --cached .
-			
-		else
-			
-			local TMP_FILE
-			core_temporaryFiles_newFileToRemoveOnExit
-			local hashesFilePath="$TMP_FILE"
-		
+	if [ -d "$path" ]; then
+		local revision="$(libertine_git_folderGitVersion "$path")"
+		if [ -n "$revision" ]; then
+			printf 'git %s\n' "$revision"
+			return 0
+		fi
+	
+		local TMP_FILE
+		core_temporaryFiles_newFileToRemoveOnExit
+		local hashesFilePath="$TMP_FILE"
+	
+		pushd "$path"
+	
 			{
 				# -mindepth 1 excludes '.'
-			
+		
 				# File system structure
 				find . -mindepth 1 ! -name .git -print0 | xargs -0 -r stat -c '%N %a %s %T %t %F'
-			
+	
 				# File contents
 				find . -mindepth 1 ! -name .git -type f -print0 | xargs -0 -r sha512sum
-			
+	
 				# Contents, if any, of symlinks to files, otherwise errors (as a symlink may change from pointing to a file to a folder to an invalid location, etc)
 				find . -mindepth 1 ! -name .git -type l -print0 | xargs -0 -r sha512sum 2>&1 || true
-		
+
 			} | sort >>"$hashesFilePath"
-		
-			printf 'sha512:'
+
+			printf 'sha512-folder '
 			sha512sum "$hashesFilePath" | awk '{print $1}'
-	
+
 			# Cleaned up by exit, but can be quite large
 			rm -rf "$hashesFilePath"
-			
-		fi
 		
-	popd
+		popd
+	fi
+	
+	printf 'other unsupported\n'
 }
 
-_libertine_compile_buildHash()
+_libertine_compile_packageHash()
 {
-	printf '%s %s\n' "$package" "$(_libertine_compile_folderHashValue "$(libertine_public_originalPackagePath)")"
-	printf '%s %s\n' "$package".config "$(_libertine_compile_folderHashValue "$libertine_machinePackageConfigurationsFolderPath"/"$package")"
+	printf 'package %s %s\n' "$package" "$(_libertine_compile_hashValue "$(libertine_public_originalPackagePath)")"
+	
+	if [ -d "$libertine_machinePackageConfigurationsFolderPath" ]; then
+		pushd "$libertine_machinePackageConfigurationsFolderPath"
+			set +f
+			local configurationFilePath
+			for configurationFilePath in /"$package".*
+			do
+				if [ -e "$configurationFilePath" ]; then
+					printf 'package %s %s\n' "$configurationFilePath" "$(_libertine_compile_hashValue "$configurationFilePath")"
+				fi
+			done
+			set -f
+		popd
+	fi
 }
 
 core_dependency_requires '*' cat
@@ -256,7 +264,7 @@ _libertine_compile_doIt()
 	core_temporaryFiles_newFileToRemoveOnExit
 	local packageHashFilePath="$TMP_FILE"
 	{
-		_libertine_compile_buildHash
+		_libertine_compile_packageHash
 		cat $libertine_machineHashFilePath
 		core_variable_array_iterate _libertine_compile_depends _libertine_compile_buildDependencyHash
 	} | sort -u >"$packageHashFilePath"
@@ -264,9 +272,7 @@ _libertine_compile_doIt()
 	if [ -f "$outputBuiltPath" ]; then
 		if diff -a -q "$outputBuiltPath" "$packageHashFilePath" 1>/dev/null; then
 			core_message NOTICE "${_libertine_compile_depth}No need to rebuild package '$package'"
-			
-			libertine_path_installBuildBinariesProvided
-	
+				
 			core_variable_array_appendUniquely _libertine_compile_built "$package"
 			rm -rf "$packageHashFilePath"
 			return 0
@@ -293,9 +299,9 @@ _libertine_compile_doIt()
 	mkdir -m 0755 -p "$(libertine_public_outputBuildSysrootPath)"
 	mkdir -m 0755 -p "$(libertine_public_outputHostSysrootPath)"
 	mkdir -m 0755 -p "$(libertine_public_outputInitramfsPath)"
+	mkdir -m 0755 -p "$(libertine_public_buildProvidesPath)"
 	printf '' >"$(libertine_public_outputInitramfsContentsFilePath)"
 	printf '' >"$(libertine_public_outputKernelBootCommandLineFilePath)"
-	libertine_env_cleanseBeforePackageCompile
 	
 	local logFolderPath="$(libertine_public_outputPath)"
 	
@@ -303,6 +309,9 @@ _libertine_compile_doIt()
 	
 	# Change environment variable PATH
 	libertine_path_exportPATH
+		
+		# Changes things like SHELL
+		libertine_env_cleanseBeforePackageCompile
 	
 		# These functions run under a modified path, eg to make patch use one we built via build_netbsd_src_patch
 		_libertine_compile_installMenuConfigIfPresent
@@ -315,16 +324,16 @@ _libertine_compile_doIt()
 			set -e
 			libertine_compile_${package} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
 		fi
-	
-	# Restore PATH
-	export PATH="$libertine_originalPATH"
+		
+	libertine_path_installBuildBinariesProvided
 	
 	# Record build details
 	mv "$packageHashFilePath" "$(libertine_public_outputHashPath)"
 	
 	core_variable_array_appendUniquely _libertine_compile_built "$package"
 	
-	libertine_path_installBuildBinariesProvided
+	# Restore PATH
+	export PATH="$libertine_originalPATH"
 }
 
 core_usesIn libertine path

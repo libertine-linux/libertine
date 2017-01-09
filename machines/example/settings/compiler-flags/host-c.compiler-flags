@@ -8,6 +8,8 @@
 -D_FORTIFY_SOURCE=2
 -D_GNU_SOURCE
 -O3
+-fno-asynchronous-unwind-tables
+-fno-unwind-tables
 -ffunction-sections
 -fdata-sections
 -Wl,--gc-sections

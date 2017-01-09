@@ -47,7 +47,6 @@
 	- hwclock on start up / shutdown
 	- nftables
 	- combine of inittab?
-	- Add support for udhcpd daemon
 	- Support for getting a random seed from random.org
 
 5. Packages to do
@@ -63,16 +62,25 @@
 5.3 Todo
 	hitch / stunnel
 	libseccomp
-		- needed for rust
+		- needed for rust / dpdk
 	gcc / g++ as a system compiler
+	llvm / clang as a system compiler or even as main compiler:
+		- https://www.vultr.com/docs/how-to-install-llvm-and-clang-on-centos-6
+		- http://ftp.math.utah.edu/pub/llvm/
+		- need to compile cmake
+			- https://gitlab.kitware.com/cmake/cmake
+			- ./bootstrap && make && make install
 	gpg v.1.x or 2?
 	a rust compiler
 	glibc compilation for stuff so broken it can only use glibc
 		- eg rust's official packages
 		- third party binaries
+	patchelf
 	openldap
 		- libraries for sudo
 		- libraries for openssh
+	go_bootstrap
+		- get Go to 1.4 and then 1.7 so that we can build https://github.com/cgt/blookup
 
 5.4 For diagnostics
 	dmidecode
@@ -83,6 +91,10 @@
 5.5 Probably not
 	* acct (process accounting, http://www.gnu.org/software/acct/)
 		* Seems unnecessary with auditd / auditctl
+
+5.6 Versioning
+	* Rework package versioning and hashing to use `.git` in package root; if not present, in `packages` or whatever
+		* If no `.git`, ?.version in package root
 
 6. ZFS
 	- initialisation scripts need to detect if formatting required
@@ -154,6 +166,7 @@
 8.3 ?dnscrypt-proxy with a local DNS cache
 8.4 LDAP local cache for sudo and SSH logins, possibly console logins (but would seem to need PAM)
 8.5 local forwarding mail server, so avoid DoS if mail service goes down
+	- OpenSMTPD seems OK
 8.7 Randomness To Do
 	- Save the random seed to pstore? or EFI?
 	- ~~Use Ubuntu's pollinate~~ pollinate client is tightly coupled to dpkg and reveals too much about the host system
@@ -162,6 +175,7 @@
 		- http://pastebin.com/cvHkE1GC is a busybox patch that adds rngd
 8.8 Kernel Security Module support
 	- Apparmour or one of SMACK, TOYO or SELinux
+	- Deprecated in favour of gradm / grsecurity
 8.9 Apply ACLs, Attrs, and File Capabilities at start up
 	- use a combined list
 8.12 Review https://wiki.ubuntu.com/Security/Features
@@ -176,12 +190,33 @@
 		- ZFS
 		- OpenSSH ssh-keygen
 		- the *build* version of gcc 5.3.0 (not host)
+		- possibly the kernel
 	- See Christian Seiler's comment here https://groups.google.com/forum/#!topic/linux.debian.devel/bca6RlraSgw for good insight on PIC and PIE and statics
 8.19 audit=1 => need to pass arguments to kernel command line
-
+8.20 paxctl / pax attrs and gradm
+8.21 Integrate git-crypt <https://www.agwa.name/projects/git-crypt/>
 
 9. Misc
-- Modify https://en.wikipedia.org/wiki/List_of_Linux_distributions_that_run_from_RAM
+
+9.1 Linux Improvements
+	- In scripts/gen_initramfs_list.sh, modify `xz --check=crc32 --lzma2=dict=1MiB` to make xz use -9 compression
+	- Use `taskset` to make sure all daemons started use CPU 0
+	- Build zfs init scripts
+	- Consider using UPX on some binaries
+
+9.2 Wikipedia
+	- Modify https://en.wikipedia.org/wiki/List_of_Linux_distributions_that_run_from_RAM
+	- Modify https://en.wikipedia.org/wiki/List_of_free_and_open-source_software_packages
+
+
+
+
+
+
+
+
+
+
 
 
 

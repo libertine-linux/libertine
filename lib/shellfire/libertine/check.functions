@@ -37,5 +37,5 @@ libertine_check_machineSettingsHash()
 
 libertine_check_calculateMachineSettingsHash()
 {
-	printf '%s %s\n' .machine "$(_libertine_compile_folderHashValue "$libertine_machineSettingsFolderPath")"
+	printf 'machine %s %s\n' "$libertine_machine" "$(_libertine_compile_hashValue "$libertine_machineSettingsFolderPath")"
 }

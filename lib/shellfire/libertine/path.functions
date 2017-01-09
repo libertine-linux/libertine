@@ -7,35 +7,113 @@ libertine_path_installBuildBinariesProvided()
 	libertine_path_installBuildBinariesProvided_callback()
 	{
 		local binary="$core_variable_array_element"
-
-		local binaryFilePath="$(libertine_public_outputBuildSysrootPath)"/usr/bin/"$binary"
 		
-		if [ ! -x "$binaryFilePath" ]; then
-			core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary (assumed to be in usr/bin) '$binary' is not executable at '$binaryFilePath' for package '$package'"
+		local relativeBinaryPath=../build-sysroot/usr/bin/"$binary"
+				
+		if [ ! -x "$relativeBinaryPath" ]; then
+			core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary (assumed to be in usr/bin) '$binary' is not executable at '$(pwd)/$relativeBinaryPath' for package '$package'"
 		fi
 		
-		if [ -e "$libertine_paths"/build/"$binary" ]; then
-			# This can occur currently with build_musl_cross_make_*
-			core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary '$binary' has already been installed by a package previous to '$package'"
-		fi
-		
-		ln -s "$binaryFilePath" "$libertine_paths"/build/"$binary"
+		ln -s "$relativeBinaryPath" "$binary"
 	}
 	
-	core_variable_array_iterate _libertine_compile_buildBinariesProvided libertine_path_installBuildBinariesProvided_callback
+	pushd "$(libertine_public_buildProvidesPath)"
+	
+		core_variable_array_iterate _libertine_compile_buildBinariesProvided libertine_path_installBuildBinariesProvided_callback
+		
+	popd
 }
 
-core_dependency_requires '*' rm mkdir
-libertine_path_create()
+core_dependency_requires '*' cat chmod sh
+_libertine_path_fakeUname()
 {
-	libertine_paths="$libertine_machineOutputFolderPath"/PATHS
-	rm -rf "$libertine_paths"
+	local binFolderPath="$1"
 	
-	local pathFolderName
-	for pathFolderName in build
+	local filePath="$binFolderPath"/uname
+	
+	{
+		printf '#!%s\n' "$binFolderPath"/sh
+		cat <<'EOF'
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+set -e
+set -u
+set -f
+
+uname_main()
+{
+	local architecture='x86_64'
+	local hostName='libertine'
+	local kernelRelease='4.4.30-0-grsec'
+	local kernelName='Linux'
+	local processorType='unknown'
+	local kernelVersion='#1-Libertine SMP Mon Nov 7 20:19:21 GMT 2016'
+	local hardwarePlatform='unknown'
+	local osName='Linux'
+
+	if [ $# -eq 0 ]; then
+		printf '%s\n' "$kernelName"
+		return 0
+	fi
+
+	while [ $# -ne 0 ]
 	do
-		mkdir -m 0755 -p "$libertine_paths"/"$pathFolderName"
+		case "$1" in
+
+			-a)
+				printf '%s %s %s %s %s %s\n' "$kernelName" "$hostName" "$kernelRelease" "$kernelVersion" "$architecture" "$osName"
+			;;
+
+			-m)
+				printf '%s\n' "$architecture"
+			;;
+
+			-n)
+				printf '%s\n' "$hostName"
+			;;
+
+			-r)
+				printf '%s\n' "$kernelRelease"
+			;;
+
+			-s)
+				printf '%s\n' "$kernelName"
+			;;
+
+			-p)
+				printf '%s\n' "$processorType"
+			;;
+
+			-v)
+				printf '%s\n' "$kernelVersion"
+			;;
+
+			-i)
+				printf '%s\n' "$hardwarePlatform"
+			;;
+
+			-o)
+				printf '%s\n' "$osName"
+			;;
+			
+			*)
+				# Will printf '-x' but should actually print 'x' for %s
+				printf 'uname: unrecognized option: %s\n' "$1" 1>&2
+				exit 1
+			;;
+
+		esac
+		
+		shift 1
 	done
+}
+
+uname_main "$@"
+EOF
+	} >"$filePath"
+	
+	chmod +x "$filePath"
 }
 
 _libertine_path_systemEssentials()
@@ -82,45 +160,21 @@ _libertine_path_systemEssentials()
 	IFS="$originalIFS"
 }
 
+core_dependency_requires '*' mkdir ln
 libertine_path_exportPATH()
 {
-	local path="$(_libertine_compile_pathsPATH)"
-	mkdir -m 0755 -p "$path"
+	local ourPATH="$(libertine_public_buildNeedsPath)"
+	mkdir -m 0755 -p "$ourPATH"
 	
-	_libertine_path_systemEssentials libertine_path_exportPATH_link true
-	libertine_path_exportPATH_link sh
-	libertine_path_exportPATH_link env
+	# Add essential binaries
+	core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded env sh
 	
-	libertine_path_exportPATH_callback()
+	# Add essential binaries to execute functions in public.functions, etc
+	_libertine_path_exportPATH_callback()
 	{
-		local binary="$core_variable_array_element"
-
-		core_message INFO "    ${_libertine_compile_depth}Package '$package' needs binary '$binary' to build"
-		libertine_path_exportPATH_link "$binary"
-	}
-	
-	core_variable_array_iterate _libertine_compile_buildBinariesNeeded libertine_path_exportPATH_callback
-	
-	export PATH="$path"
-}
-
-libertine_path_exportPATH_link()
-{
-	local binary="$1"
-	if [ $# -eq 2 ]; then
-		local isCalledBySystemEssentials="$2"
-	else
-		local isCalledBySystemEssentials=false
-	fi
-
-	local path="$(_libertine_compile_pathsPATH)"
-	
-	if [ -x "$path"/"$binary" ]; then
-		return 0
-	fi
-	
-	if $isCalledBySystemEssentials; then
-		# Eliminate package managers and sudo
+		local binary="$1"
+		
+		# Except don't add binaries that really aren't required (sudo, package managers, kill)
 		case "$binary" in
 		
 			sudo)
@@ -139,59 +193,63 @@ libertine_path_exportPATH_link()
 			;;
 		
 		esac
-	fi
+		
+		core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded "$binary"
+	}
+	_libertine_path_systemEssentials _libertine_path_exportPATH_callback
 	
-	local sourceBinaryName="$binary"
-	libertine_path_exportPATH_link_isGccBinary()
+	libertine_path_exportPATH_addSymlinksToPath()
 	{
-		local gccExecutable="$1"
+		local binary="$core_variable_array_element"
 		
-		if [ "$gccExecutable" = "$binary" ]; then
+		local baseInfoMessage="    ${_libertine_compile_depth}Package '$package' needs binary '$binary' to build"
 		
-			case "$package" in
-				
-				build_*)
-					sourceBinaryName="$libertine_build"-"$binary"
-				;;
-			
-				*)
-					sourceBinaryName="$libertine_host"-"$binary"
-				;;
-				
-			esac
+		if [ "$binary" = 'uname' ]; then
+			core_message INFO "$baseInfoMessage (faked)"
+			_libertine_path_fakeUname "$ourPATH"
+			return 0
 		fi
+		
+		libertine_path_exportPATH_addSymlinksToPath_findBuildProvidedBinaries()
+		{
+			# Iterates over packages already build in reverse order (ie most recent first)
+			local count=$#
+			local index=$count
+			while [ $index -ne 0 ]
+			do
+				eval local alreadyBuiltPackageInReverseOrder="\${$index}"
+				
+				local relativePath="$(libertine_public_buildProvidesPathRelativeToCurrentPackagePATH "$alreadyBuiltPackageInReverseOrder")"/"$binary"
+				if [ -x "$ourPATH"/"$relativePath" ]; then
+					pushd "$ourPATH"
+						core_message INFO "$baseInfoMessage (from package '$alreadyBuiltPackageInReverseOrder')"
+						ln -s "$relativePath" "$binary"
+					popd
+					
+					return 0
+				fi
+								
+				index=$((index-1))
+			done
+			
+			# Not provided by any package, search on default PATH
+			if command -v "$binary" 1>/dev/null 2>/dev/null; then
+				pushd "$ourPATH"
+					local hostPath="$(command -v "$binary")"
+					core_message INFO "$baseInfoMessage (from host PATH at '$hostPath')"
+					ln -s "$hostPath" "$binary"
+				popd
+			else
+				core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binary' needed to build the package '$package' in PATH '$PATH'"
+			fi
+		}
+		
+		# Iterates over packages already build in reverse order (ie most recent first)
+		core_variable_array_passToFunctionAsArguments _libertine_compile_built libertine_path_exportPATH_addSymlinksToPath_findBuildProvidedBinaries
 	}
 	
-	libertine_public_gccAndBinutilsExecutables libertine_path_exportPATH_link_isGccBinary
+	# Adds each needed binary into a PATH
+	core_variable_array_iterate _libertine_compile_buildBinariesNeeded libertine_path_exportPATH_addSymlinksToPath
 	
-	local found=false
-	
-	local binaryName
-	for binaryName in "$sourceBinaryName" "$binary"
-	do
-		if $found; then
-			break
-		fi
-		
-		if [ -x "$libertine_paths"/build/"$sourceBinaryName" ]; then
-			ln -s "$libertine_paths"/build/"$sourceBinaryName" "$path"/"$binary"
-			found=true
-			break
-		fi
-					
-		local knownPath
-		for knownPath in /usr/local/bin /usr/bin /bin /usr/local/sbin /usr/sbin /sbin
-		do
-			if [ -x "$knownPath"/"$binaryName" ]; then
-				ln -s "$knownPath"/"$binaryName" "$path"/"$binary"
-				found=true
-				break
-			fi
-		done
-		
-	done
-	
-	if ! $found; then
-		core_exitError $core_commandLine_exitCode_OSFILE "Can not find binary '$binary' in standard path"
-	fi
+	export PATH="$ourPATH"
 }

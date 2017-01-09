@@ -17,21 +17,18 @@ _program()
 		. "$libertine_configuration"
 		
 		libertine_machinesFolderPath="$libertine_machinesPath"
-		libertine_machineFolderPath="$libertine_machinesPath"/"$libertine_machine"
+		libertine_machineFolderPath="$libertine_machinesFolderPath"/"$libertine_machine"
 		libertine_machineSettingsFolderPath="$libertine_machineFolderPath"/settings
-		libertine_machinePackageConfigurationsFolderPath="$libertine_machineSettingsFolderPath"/package-configurations
-
-		libertine_machineInputPackagesPath="$libertine_machineSettingsFolderPath"/packages
+		libertine_machinePackageConfigurationsFolderPath="$libertine_machineFolderPath"/package-configurations
+		libertine_machineInputPackagesPath="$libertine_machineFolderPath"/packages
 				
 		libertine_machineOutputFolderPath="$libertine_machinesOutputFolderPath"/"$libertine_machine"
-		libertine_machineHashFilePath="$libertine_machineOutputFolderPath"/machine.hash
+		libertine_machineHashFilePath="$libertine_machineOutputFolderPath"/"$libertine_machine".hash
 		libertine_machineOutputPackagesFolderPath="$libertine_machineOutputFolderPath"/packages
 		
 		libertine_check_pathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleThem
 
-		mkdir -m 0755 -p "$libertine_machinesOutputFolderPath"
-		mkdir -m 0755 -p "$libertine_machineOutputFolderPath"
-		mkdir -m 0755 -p "$libertine_machineOutputPackagesFolderPath"
+		mkdir -m 0755 -p "$libertine_machinesOutputFolderPath" "$libertine_machineOutputFolderPath" "$libertine_machineOutputPackagesFolderPath"
 		
 		# TODO: Document this 'hack' - we have to know this data in advance of using musl-cross-make
 		. "$libertine_machineInputPackagesPath"/musl_cross_make/compiler-details
@@ -41,7 +38,6 @@ _program()
 		libertine_architecture_configure
 		libertine_compile_configure
 		libertine_originalPATH="$PATH"
-		libertine_path_create
 		libertine_env_cleanse
 		libertine_compile
 	}
@@ -182,7 +178,7 @@ _program_commandLine_processOptionWithoutArgument()
 	case "$optionName" in
 		
 		d|debug)
-			montebianco_chroot_rebuild=true
+			_program_default_makeDebug=true
 		;;
 		
 	esac

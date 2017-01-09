@@ -14,7 +14,7 @@ libertine_configsite_create()
 
 	_libertine_configsite_createInvariant "$sysroot"
 	_libertine_configsite_appendWithPrefix "$rootPrefix" "$package"
-	_libertine_configsite_append "$sysroot" "$forBuild" "$sysroot" "$(_libertine_compile_pathsPATH)"
+	_libertine_configsite_append "$sysroot" "$forBuild" "$sysroot" "$(libertine_public_buildNeedsPath)"
 	
 	# In case a package ships this in error
 	rm -rf config.cache
