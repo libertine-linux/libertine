@@ -500,7 +500,6 @@ libertine_public_adjustShaBangAllFilesInPath()
 		-e '1 s;^#!/usr/bin/;#!/usr/bin/env ;g' \
 		-e '1 s;^#!/usr/sbin/;#!/usr/bin/env ;g' \
 		-e '1 s;^#!/usr/bin/env env ;#!/usr/bin/env ;g' \
-		-e '1 s;^#!/usr/bin/env bash;#!/usr/bin/env sh;g' \
 		-e '1 s;^#!/usr/bin/env ;#!'"$envShaBang"' ;g'
 }
 

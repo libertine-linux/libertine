@@ -192,9 +192,18 @@
 		- the *build* version of gcc 5.3.0 (not host)
 		- possibly the kernel
 	- See Christian Seiler's comment here https://groups.google.com/forum/#!topic/linux.debian.devel/bca6RlraSgw for good insight on PIC and PIE and statics
-8.19 audit=1 => need to pass arguments to kernel command line
-8.20 paxctl / pax attrs and gradm
+8.19 ~~audit=1 => need to pass arguments to kernel command line~~
+8.20 PAX
+	- paxctl / pax attrs and gradm (RBAC)
+	- review PAX settings used in linux_prep.mk
 8.21 Integrate git-crypt <https://www.agwa.name/projects/git-crypt/>
+8.22 Add support for [Kafel](https://github.com/google/kafel) syscall filters and possibly nsjail (Also a google product)
+8.23 Add support for [cvefind](https://github.com/mgaffney/cvefind) (will require a bootstrap of go)
+	- add lists of cpe to packages
+	- detect latest version of package (see lua-power for an approach that finds last tag)
+	- have a list of CVE numbers that are known to be fixed
+	- have a list of suppressed CVE numbers (eg does not apply, fix is broken, etc)
+	- also look at [vFeed](https://github.com/toolswatch/vFeed)
 
 9. Misc
 
