@@ -1,0 +1,83 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+core_dependency_requires '*' cat
+libertine_cmake_createToolchainFile()
+{
+	# Relies on libertine_cmakeCompilerId and libertine_cmakeCompilerVersion in musl_cross_make/compiler-details
+	
+	case "$package" in
+		
+		build_*)
+			local triple="$libertine_build"
+			local installPrefix="$(libertine_public_outputBuildSysrootPath)"/usr
+			local cCompilerFlags="$(libertine_public_buildCCompilerFlags)"
+			local cxxCompilerFlags="$(libertine_public_buildCxxCompilerFlags)"
+		;;
+		
+		*)
+			local triple="$libertine_host"
+			local installPrefix='/usr'
+			local cCompilerFlags="$(libertine_public_hostCCompilerFlags)"
+			local cxxCompilerFlags="$(libertine_public_hostCxxCompilerFlags)"
+		;;
+		
+	esac
+	
+	local toolchainFilePath="$(libertine_public_sourcePath)"/toolchain.cmake
+	
+	cat >"$toolchainFilePath" <<-EOF
+		set(CMAKE_INSTALL_PREFIX "${installPrefix}")
+		set(CMAKE_STAGING_PREFIX "${installPrefix}")
+		set(CMAKE_FIND_ROOT_PATH "$(libertine_public_inputSysrootPath)")
+		set(CMAKE_SYSROOT "$(libertine_public_inputSysrootPath)")
+		
+		set(CMAKE_C_COMPILER_TARGET "${triple}")
+		set(CMAKE_CXX_COMPILER_TARGET "${triple}")
+		set(CMAKE_AR "${triple}-ar")
+		set(CMAKE_RANLIB "${triple}-ranlib")
+		set(CMAKE_LINKER "${triple}-cc")
+		set(CMAKE_C_COMPILER_ID "${libertine_cmakeCompilerId}")
+		set(CMAKE_C_COMPILER_VERSION "${libertine_cmakeCompilerVersion}")
+		set(CMAKE_C_COMPILER_LAUNCHER "ccache")
+		set(CMAKE_C_COMPILER "${triple}-cc")
+		set(CMAKE_C_FLAGS "-DNDEBUG ${cCompilerFlags}")
+		set(CMAKE_C_FLAGS_DEBUG "-DNDEBUG ${cCompilerFlags}")
+		set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG ${cCompilerFlags}")
+		set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cCompilerFlags}")
+		set(CMAKE_C_FLAGS_MAINTAINER "-DNDEBUG ${cCompilerFlags}")
+		set(CMAKE_CXX_COMPILER_ID "${libertine_cmakeCompilerId}")
+		set(CMAKE_CXX_COMPILER_VERSION "${libertine_cmakeCompilerVersion}")
+		set(CMAKE_CXX_COMPILER_LAUNCHER "ccache")
+		set(CMAKE_CXX_COMPILER "${triple}-c++")
+		set(CMAKE_CXX_FLAGS "-DNDEBUG ${cxxCompilerFlags}")
+		set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG ${cxxCompilerFlags}")
+		set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${cxxCompilerFlags}")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cxxCompilerFlags}")
+		set(CMAKE_CXX_FLAGS_MAINTAINER "-DNDEBUG ${cxxCompilerFlags}")
+		
+		set(CMAKE_SYSTEM_NAME Linux)
+		set(CMAKE_SYSTEM_VERSION 1)
+		set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+		set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+		set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+		set(BUILD_SHARED_LIBS OFF)
+		set(CMAKE_FIND_NO_INSTALL_PREFIX TRUE)
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+		set(CMAKE_LINK_SEARCH_START_STATIC ON)
+		set(CMAKE_SKIP_RPATH OFF)
+		set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+		set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+		set(CMAKE_BUILD_TYPE Release)
+		
+		set(CMAKE_POSITION_INDEPENDENT_CODE false)
+		set(CMAKE_POSITION_INDEPENDENT_CODE false CACHE "" INTERNAL FORCE)
+		
+		set(CMAKE_COLOR_MAKEFILE OFF)
+	EOF
+	
+	if [ "$libertine_cmakeCompilerId" = 'GNU' ]; then
+		printf '%s\n' 'set(CMAKE_COMPILER_IS_GNUCC 1)' >>"$toolchainFilePath"
+	fi
+}

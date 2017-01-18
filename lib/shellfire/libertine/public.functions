@@ -1010,142 +1010,36 @@ _libertine_public_autoconf_modernAutoconfConfigure()
 	CONFIG_SITE="$(libertine_public_inputSysrootPath)"/etc/config.site ./configure -C --build="$libertine_build" --host="$host" "$@"	
 }
 
-core_dependency_requires '*' cat
-libertine_public_cmake_generateToolchainFile()
+_libertine_public_cmake_cacheFilePath()
 {
-	_libertine_compile_createInputSysroot "$@"
-	
-	local compilerId='GNU'
-	
-	local toolchainFilePath="$(libertine_public_sourcePath)"/toolchain.cmake
-	
-	cat >"$toolchainFilePath" <<-EOF
-		set(CMAKE_SYSTEM_NAME Linux)
-		set(CMAKE_SYSTEM_VERSION 1)
-		set(CMAKE_SYSTEM_PROCESSOR "$libertine_hostCmakeProcessor")
-
-		set(CMAKE_FIND_ROOT_PATH "$(libertine_public_inputSysrootPath)")
-		set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-		set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-		set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-		set(CMAKE_SYSROOT "$(libertine_public_inputSysrootPath)")
-		set(CMAKE_STAGING_PREFIX "$(libertine_public_outputHostSysrootPath)")
-		
-		set(CMAKE_INSTALL_PREFIX "/usr")
-		
-		set(CMAKE_AR "${libertine_host}-ar")
-		
-		set(CMAKE_RANLIB "${libertine_host}-ranlib")
-		
-		set(CMAKE_LINKER "${libertine_host}-ld")
-		
-		set(BUILD_SHARED_LIBS OFF)
-		set(CMAKE_LINK_SEARCH_START_STATIC ON)
-		set(CMAKE_SKIP_RPATH OFF)
-		set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-Bstatic,-z,relro,-z,now")
-		set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-		
-		set(CMAKE_C_COMPILER_ID "$libertine_cmakeCompilerId")
-		set(CMAKE_C_COMPILER_VERSION "$libertine_cmakeCompilerVersion")
-		set(CMAKE_C_COMPILER_LAUNCHER "ccache")
-		set(CMAKE_C_COMPILER "${libertine_host}-cc")
-		set(CMAKE_C_FLAGS "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
-		set(CMAKE_C_FLAGS_DEBUG "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
-		set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
-		set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
-		set(CMAKE_C_FLAGS_MAINTAINER "-DNDEBUG $(libertine_public_hostCCompilerFlags)")
-		
-		set(CMAKE_CXX_COMPILER_ID "$libertine_cmakeCompilerId")
-		set(CMAKE_CXX_COMPILER_VERSION "$libertine_cmakeCompilerVersion")
-		set(CMAKE_CXX_COMPILER_LAUNCHER "ccache")
-		set(CMAKE_CXX_COMPILER "${libertine_host}-c++")
-		set(CMAKE_CXX_FLAGS "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
-		set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
-		set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
-		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
-		set(CMAKE_CXX_FLAGS_MAINTAINER "-DNDEBUG $(libertine_public_hostCxxCompilerFlags)")
-		
-		# //Flags used by the linker.
-		# CMAKE_EXE_LINKER_FLAGS:STRING=
-		#
-		# //Flags used by the linker during debug builds.
-		# CMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=
-		#
-		# //Flags used for linking binaries during maintainer builds.
-		# CMAKE_EXE_LINKER_FLAGS_MAINTAINER:STRING=-Wl,--warn-unresolved-symbols,--warn-once
-		#
-		# //Flags used by the linker during release minsize builds.
-		# CMAKE_EXE_LINKER_FLAGS_MINSIZEREL:STRING=
-		#
-		# //Flags used by the linker during release builds.
-		# CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
-		#
-		# //Flags used by the linker during Release with Debug Info builds.
-		# CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
-		
-		set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-		
-		set(CMAKE_BUILD_TYPE Release)
-	EOF
-	
-	case "$libertine_cmakeCompilerId" in
-		
-		clang|qcc)
-			cat >"$toolchainFilePath" <<-EOF
-				set(CMAKE_C_COMPILER_TARGET "$libertine_host")
-				set(CMAKE_CXX_COMPILER_TARGET "$libertine_host")
-			EOF
-		;;
-		
-	esac
+	printf '%s' "$(libertine_public_sourcePath)"/CMakeCache.txt
 }
 
-libertine_public_cmake_addOption()
+libertine_public_cmake_prepare()
 {
-	local optionName="$1"
-	local optionValue="$2"
-	local type="$3"
-
-	local quoted=true
-	local force=' FORCE'
-	case "$type" in
-		
-		BOOL)
-			quoted=false
-		;;
-		
-		INTERNAL)
-			force=''
-		;;
-		
-	esac
-	
-	local cmakeConfigurationFilePath="$(libertine_public_sourcePath)"/"$package".cache.configuration.cmake
-	
-	if $quoted; then
-		printf 'set(%s "%s" CACHE %s "docstring"%s)\n' "$optionName" "$optionValue" "$type" "$force" >>"$cmakeConfigurationFilePath"
-	else
-		printf 'set(%s %s CACHE %s "docstring"%s)\n' "$optionName" "$optionValue" "$type" "$force" >>"$cmakeConfigurationFilePath"
-	fi
+	# Ensure any checked out cache isn't used
+	printf '# Empty Cache\n\n' >"$(_libertine_public_cmake_cacheFilePath)"
 }
 
-core_dependency_requires '*' cat sh
+core_dependency_requires '*' rm mkdir
 libertine_public_cmake()
 {
-	# We generate a command to make it easier to debug
-	local commandFilePath="$(libertine_public_sourcePath)"/"$package".cmake.sh
-	cat >"$commandFilePath" <<-EOF
-		set -u
-		set -e
-		set -f
-		IFS=''
-		export PATH='$PATH'
-		cd '$(libertine_public_sourcePath)' 1>/dev/null 2>/dev/null
-		exec cmake -C ./$package.cache.configuration.cmake -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=./toolchain.cmake -Wno-error=dev -Wno-deprecated -Wno-error=deprecated
-	EOF
+	libertine_cmake_createToolchainFile
 	
-	sh "$commandFilePath"
+	local buildFolderName='.libertine-cmake-build'
+	rm -rf "$buildFolderName"
+	mkdir -m 0700 -p "$buildFolderName"
+	
+	pushd "$buildFolderName"	
+		cmake \
+			--trace --debug-trycompile \
+			-G 'Unix Makefiles' \
+			-DCMAKE_TOOLCHAIN_FILE="$(pwd)"/../toolchain.cmake \
+			-Wno-error=dev -Wno-deprecated -Wno-error=deprecated \
+			"$@" \
+			.. \
+			1>&2
+	popd
 }
 
 core_dependency_requires '*' mkdir cp

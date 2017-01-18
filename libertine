@@ -5,7 +5,7 @@
 
 _program()
 {
-	core_usesIn libertine check architecture path compile env configsite
+	core_usesIn libertine check architecture path compile env configsite cmake
 	core_dependency_requires '*' uname mkdir
 	libertine()
 	{
