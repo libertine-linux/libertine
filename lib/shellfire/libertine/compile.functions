@@ -317,7 +317,7 @@ _libertine_compile_doIt()
 		_libertine_compile_installMenuConfigIfPresent
 		_libertine_compile_sourcePackageConfig
 		_libertine_compile_patchIfPresent
-		libertine_public_adjustShaBangAllFilesInPath "$(libertine_public_packagePath)"
+		libertine_public_adjustShaBangAllExecutableFilesInPath "$(libertine_public_packagePath)"
 		
 		if $hasCompileFunction; then
 			core_message INFO "    ${_libertine_compile_depth}Running build function 'libertine_compile_${package}'"

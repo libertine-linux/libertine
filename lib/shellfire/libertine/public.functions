@@ -475,8 +475,34 @@ libertine_public_hostCxxCompilerFlags()
 	_libertine_public_compilerFlags host-cxx "$@"
 }
 
+libertine_public_adjustShaBangAllFilesInPathEvenIfNotFirstLine()
+{
+	local folderPath="$1"
+	
+	case "$package" in
+		
+		build_*)
+			local envShaBang="$(libertine_public_buildNeedsPath)"/env
+		;;
+		
+		*)
+			local envShaBang=/usr/bin/env
+		;;
+		
+	esac
+	
+	find "$folderPath" -type f -print0 | xargs -r -0 sed -i \
+		-e 's;^#! /;#!/;g' \
+		-e 's;^#!/bin/;#!/usr/bin/;g' \
+		-e 's;^#!/sbin/;#!/usr/sbin/;g' \
+		-e 's;^#!/usr/bin/;#!/usr/bin/env ;g' \
+		-e 's;^#!/usr/sbin/;#!/usr/bin/env ;g' \
+		-e 's;^#!/usr/bin/env env ;#!/usr/bin/env ;g' \
+		-e 's;^#!/usr/bin/env ;#!'"$envShaBang"' ;g'
+}
+
 core_dependency_requires '*' find xargs sed
-libertine_public_adjustShaBangAllFilesInPath()
+libertine_public_adjustShaBangAllExecutableFilesInPath()
 {
 	local folderPath="$1"
 	
