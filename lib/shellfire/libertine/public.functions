@@ -68,7 +68,7 @@ libertine_public_buildNeedsPath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/build_needs
+	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/build-needs
 }
 
 libertine_public_originalPackagePath()
@@ -178,14 +178,14 @@ libertine_public_buildProvidesPath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$(libertine_public_outputPath "$package")"/build_provides
+	printf '%s' "$(libertine_public_outputPath "$package")"/build-provides
 }
 
 libertine_public_buildProvidesPathRelativeToCurrentPackagePATH()
 {
 	local otherPackage="$1"
 	
-	printf '%s' ../../"$otherPackage"/build_provides
+	printf '%s' ../../"$otherPackage"/build-provides
 }
 
 libertine_public_outputInitramfsPath()
@@ -1061,30 +1061,30 @@ libertine_public_installAndStripBinariesIn()
 	done
 }
 
-libertine_public_goHostCrossCompile()
-{
-	local package="$1"
-	# ? go get cgt.name/pkg/blookup
-	
-	# GOROOT=""
-	# GOROOT_FINAL='/usr'
-	# GOROOT_FINAL
-	# GOBIN="$GOROOT"/bin
-	
-	case "$libertine_hostGo" in
-		
-		arm)
-			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GOARM="$libertine_hostGoArm" go build -v "$package"
-		;;
-		
-		386)
-			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GO386="$libertine_hostGo386" go build -v "$package"
-		;;
-		
-		*)
-			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" go build -v "$package"
-		;;
-		
-	esac
-	
-}
+# libertine_public_goHostCrossCompile()
+# {
+# 	local package="$1"
+# 	# ? go get cgt.name/pkg/blookup
+#
+# 	# GOROOT=""
+# 	# GOROOT_FINAL='/usr'
+# 	# GOROOT_FINAL
+# 	# GOBIN="$GOROOT"/bin
+#
+# 	case "$libertine_hostGo" in
+#
+# 		arm)
+# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GOARM="$libertine_hostGoArm" go build -v "$package"
+# 		;;
+#
+# 		386)
+# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GO386="$libertine_hostGo386" go build -v "$package"
+# 		;;
+#
+# 		*)
+# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" go build -v "$package"
+# 		;;
+#
+# 	esac
+#
+# }
