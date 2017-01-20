@@ -45,10 +45,10 @@ uname_main()
 {
 	local architecture='x86_64'
 	local hostName='libertine'
-	local kernelRelease='4.4.30-0-grsec'
+	local kernelRelease='4.4.35-0-grsec'
 	local kernelName='Linux'
 	local processorType='unknown'
-	local kernelVersion='#1-Libertine SMP Mon Nov 7 20:19:21 GMT 2016'
+	local kernelVersion='#1-Libertine SMP Thu Jun 16 09:22:17 UTC 2016'
 	local hardwarePlatform='unknown'
 	local osName='Linux'
 

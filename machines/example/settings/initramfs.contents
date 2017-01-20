@@ -4,4 +4,4 @@ file /etc/sshd_authorized_keys/raph initramfs/etc/sshd_authorized_keys/raph 0400
 dir /home/raph 0700 1000 1000
 dir /srv/httpd/myhttpdsite 0500 89 89
 # rcS will change the uid:gid to 89:89 as part of boot
-file /srv/httpd/myhttpdsite/index.html 0400 89 89
+file /srv/httpd/myhttpdsite/index.html initramfs/srv/httpd/myhttpdsite/index.html 0400 89 89
