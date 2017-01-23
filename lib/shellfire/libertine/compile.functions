@@ -26,6 +26,8 @@ _libertine_compile_copySourcePath()
 			cp -a -f -H "$originalPackagePath"/"$relativePath"/. "$packagePath"/"$relativePath"/
 		done
 	fi
+	
+	
 }
 
 core_dependency_requires '*' cat
@@ -295,11 +297,11 @@ _libertine_compile_doIt()
 	_libertine_compile_createInputSysroot
 	
 	core_message NOTICE "${_libertine_compile_depth}Miscellaneous preparations before building package '$package'"
-	mkdir -m 0755 -p "$(libertine_public_outputMiscPath)"
-	mkdir -m 0755 -p "$(libertine_public_outputBuildSysrootPath)"
-	mkdir -m 0755 -p "$(libertine_public_outputHostSysrootPath)"
-	mkdir -m 0755 -p "$(libertine_public_outputInitramfsPath)"
-	mkdir -m 0755 -p "$(libertine_public_buildProvidesPath)"
+	mkdir -m 0700 -p "$(libertine_public_outputMiscPath)"
+	mkdir -m 0700 -p "$(libertine_public_outputBuildSysrootPath)"
+	mkdir -m 0700 -p "$(libertine_public_outputHostSysrootPath)"
+	mkdir -m 0700 -p "$(libertine_public_outputInitramfsPath)"
+	mkdir -m 0700 -p "$(libertine_public_buildProvidesPath)"
 	printf '' >"$(libertine_public_outputInitramfsContentsFilePath)"
 	printf '' >"$(libertine_public_outputKernelBootCommandLineFilePath)"
 	

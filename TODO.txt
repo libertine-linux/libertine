@@ -158,6 +158,7 @@
 8.1 Add libressl ssl_helper for wget
 8.2 Encryption of cpio archive files with decryption at boot
 	- Use ecryptfs https://wiki.archlinux.org/index.php/ECryptfs ?
+	- Use the new ext4 encryption ?
 	- Store the majority of the archive as a binary .img file, which we mount and pivot_root over?
 	- See  ecryptfs-simple
 	- Because of the way thngs work, we'd need either to leave busybox unencrypted or create two copies of it
@@ -208,8 +209,11 @@
 9. Misc
 
 9.1 Linux Improvements
-	- In scripts/gen_initramfs_list.sh, modify `xz --check=crc32 --lzma2=dict=1MiB` to make xz use -9 compression
-	- Use `taskset` to make sure all daemons started use CPU 0
+	- Verify RTM_LOCKS / https://lwn.net/Articles/544125/ Skylake+ enables Intel TSX
+	- taskset for 'whole-machine' daemons
+		- what about httpd? inotifyd? dnsmasq?
+			- we want to run on all BUT 0 if multi-CPU
+		- doesn't work for init (runs on all CPUs w/o a patch)
 	- Build zfs init scripts
 	- Consider using UPX on some binaries
 

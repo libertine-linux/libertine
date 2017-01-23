@@ -202,6 +202,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* For complex or performant scripting: Lua (as LuaJIT)
 	* Just come with too many issues and complexity creating insecurity: Legacy cruft like Perl or M4, horrible like JavaScript or PHP, difficult to deploy like Python or just uggh, Ruby
 		* Note that perl and m4 are implicitly used becayse building Linux and anything using Autocruft needs them
+* Real Time Clock (RTC) is always assumed to be UTC. Running a BIOS clock in local time is a great way to create problems.
 
 ### Use Cases
 

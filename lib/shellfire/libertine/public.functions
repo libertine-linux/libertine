@@ -233,14 +233,14 @@ libertine_public_copy()
 	
 	# (1) From git
 	# (2) From git
-	# (3) Mac OS X
-	# (4) Mac OS X (NFS share or USB FAT filesystem)
-	find "$destinationFolderPath" \
-		-type f -name '.gitignore' \
-		-or -type f -name '.git' \
-		-or -type f -name '.DS_Store' \
-		-or -type f -name '._*' \
-		-print0 | xargs -0 -r -s 1024 rm -rf
+	# (3) From git
+	# (4) Mac OS X
+	# (5) Mac OS X (NFS share or USB FAT filesystem)
+	find "$destinationFolderPath" -type f -name '.gitignore' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type d -name '.git' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name '.git' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name '.DS_Store' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name '._*' -print0 | xargs -0 -r -s 1024 rm -rf
 }
 
 core_dependency_requires '*' find xargs chown
@@ -278,15 +278,13 @@ libertine_public_copy_filesystem()
 	
 	# 1 - 3: Remove files that shouldn't make it to the initramfs
 	# 4, 5, 6, 7: Remove block devices, char devices, named pipes (FIFOs) and sockets; these should be created using initramfs generate (and can't have been created via storage in git)
-	find "$destinationFolderPath" \
-		-type f -name '*.disabled' \
-		-or -type f -name 'README.*' \
-		-or -type f -name 'README' \
-		-or -type b \
-		-or -type c \
-		-or -type p \
-		-or -type s \
-		-print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name '*.disabled' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name 'README' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type f -name 'README.*' -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type b -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type c -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type p -print0 | xargs -0 -r -s 1024 rm -rf
+	find "$destinationFolderPath" -type s -print0 | xargs -0 -r -s 1024 rm -rf
 	
 	# Ensure all files are owned by the current user, so that the initramfs generation code correctly maps to root
 	local uid="$(id -u)"
@@ -786,7 +784,7 @@ libertine_public_menuconfig_hasConfigured()
 	local name="$1"
 	local packageX="$2"
 	
-	grep -q '^'"$name"'=y$' "$(libertine_public_packagePath "$packageX")"/.config
+	grep -q '^'"$name"'=y$' "$(libertine_public_packagePath "$packageX")"/"$packageX".mk
 }
 
 libertine_public_menuconfig_installBusyboxRelatedFilesIfConfigured()
