@@ -4,9 +4,10 @@
 
 00_baseline
 curl
-luajit
 dnsmasq
 openssh_server
 openssh_client
 sudo
 rsync
+busybox_crond
+busybox_httpd

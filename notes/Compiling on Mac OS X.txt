@@ -1,0 +1,46 @@
+Compiling on Mac OS X
+
+- https://stackoverflow.com/questions/10018764/building-linux-kernel-on-mac-os-x#10020483
+- If we could get a `ld` that worked we might be able to get somewhere (somehow musl-cross-make works via brew)
+- And a busybox for Mac OS X
+- Need libelf, gsed, etc; we could use brew to bootstrap
+
+brew install libelf
+brew install gnu-sed
+brew sh
+rm -rf TEMP
+mkdir TEMP
+cat <<EOT >> TEMP/elf.h
+#include "libelf/gelf.h"
+#define R_386_NONE 0
+#define R_386_32 1
+#define R_386_PC32 2
+#define R_ARM_NONE 0
+#define R_ARM_PC24 1
+#define R_ARM_ABS32 2
+#define R_MIPS_NONE 0
+#define R_MIPS_16 1
+#define R_MIPS_32 2
+#define R_MIPS_REL32 3
+#define R_MIPS_26 4
+#define R_MIPS_HI16 5
+#define R_MIPS_LO16 6
+#define R_IA64_IMM64 0x23 /* symbol + addend, mov imm64 */
+#define R_PPC_ADDR32 1 /* 32bit absolute address */
+#define R_PPC64_ADDR64 38 /* doubleword64 S + A */
+#define R_SH_DIR32 1
+#define R_SPARC_64 32 /* Direct 64 bit */
+#define R_X86_64_64 1 /* Direct 64 bit */
+#define R_390_32 4 /* Direct 32 bit. */
+#define R_390_64 22 /* Direct 64 bit. */
+#define R_MIPS_64 18
+EOT
+touch TEMP/byteswap.h
+touch TEMP/endian.h
+
+# Specifying ARCH is very important; Mac OS X uname reports the system as i686 which breaks the build
+
+ARCH=arm64
+make clean
+PATH="$(brew --prefix gnu-sed)"/libexec/gnubin:"$PATH" make -j 1 ARCH="$ARCH" INSTALL_HDR_PATH=./TEMP headers_install HOSTCFLAGS="-ITEMP -I $(brew --prefix libelf)/include"
+
