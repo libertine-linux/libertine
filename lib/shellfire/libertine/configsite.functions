@@ -173,9 +173,9 @@ _libertine_configsite_append()
 		ac_cv_prog_RANLIB=${target}-ranlib
 		ac_cv_prog_STRIP=${target}-strip
 	
-		ac_cv_prog_CC='${target}-${libertine_cCompilerName} ${cFlags} --sysroot=${sysroot}'
-		ac_cv_prog_CPP='${target}-${libertine_cCompilerName} ${cFlags} --sysroot=${sysroot} -E'
-		ac_cv_prog_CXX='${target}-${libertine_cxxCompilerName} ${cxxFlags} --sysroot=${sysroot}'
+		ac_cv_prog_CC='${target}-cc ${cFlags} --sysroot=${sysroot}'
+		ac_cv_prog_CPP='${target}-cc ${cFlags} --sysroot=${sysroot} -E'
+		ac_cv_prog_CXX='${target}-c++ ${cxxFlags} --sysroot=${sysroot}'
 	EOF
 }
 

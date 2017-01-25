@@ -165,6 +165,8 @@
 	- dm-crypt
 	- EncFS isn't really an option, as it exposes metadata and needs FUSE
 8.3 ?dnscrypt-proxy with a local DNS cache
+	- <http://www.insanitybit.com/2013/06/26/hardening-dnscrypt/>
+	- <http://www.insanitybit.com/2013/06/24/apparmor-profile-for-dnscrypt/>
 8.4 LDAP local cache for sudo and SSH logins, possibly console logins (but would seem to need PAM)
 8.5 local forwarding mail server, so avoid DoS if mail service goes down
 	- OpenSMTPD seems OK
@@ -174,6 +176,8 @@
 		- http://pastebin.com/cvHkE1GC is a busybox patch that adds rngd
 8.9 Apply ACLs, Attrs, and File Capabilities at start up
 	- use a combined list
+8.10 Consider adding back --enable-default-pie
+	- breaks sshd, zfs amongst others with seg faults
 8.12 Review https://wiki.ubuntu.com/Security/Features
 8.15 Add Prelude IDS support to audit_userspace `./configure --with-prelude` (http://www.prelude-siem.com/en/products/prelude-oss/) / https://www.prelude-siem.org/projects/prelude/files
 	- check vs snort and other IDS...
