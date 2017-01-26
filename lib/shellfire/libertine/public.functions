@@ -1066,6 +1066,22 @@ libertine_public_cmake()
 	popd
 }
 
+libertine_public_stripAndSecureBinary()
+{
+	local binaryFilePath="$1"
+	
+	"$libertine_host"-strip "$binaryFilePath"
+	
+	libertine_public_secureBinary "$binaryFilePath"
+}
+
+libertine_public_secureBinary()
+{
+	local binaryFilePath="$1"
+	
+	:
+}
+
 core_dependency_requires '*' mkdir cp
 libertine_public_installAndStripBinariesIn()
 {
@@ -1081,7 +1097,8 @@ libertine_public_installAndStripBinariesIn()
 	do
 		local destinationExecutableFilePath="$destinationFolderPath"/"$executable"
 		cp "$(libertine_public_outputHostSysrootPath)"/usr/"$folderName"/"$executable" "$destinationFolderPath"
-		${libertine_host}-strip "$destinationExecutableFilePath"
+		
+		libertine_public_stripAndSecureBinary "$destinationExecutableFilePath"
 	done
 }
 
