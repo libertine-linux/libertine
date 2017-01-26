@@ -2,8 +2,23 @@
 ## Web Services
 - Librato
 - Splunk
+- Hosted Graphite + Grafana: https://www.hostedgraphite.com/hosted-grafana/
+	- But $250 / month
+	- Graphite is Python...
+	
 
 ## Self Hosted
 - https://github.com/circonus-labs/reconnoiter
 - Prometheus
 	- Written in Go
+- https://sonnguyen.ws/monitor-server-with-collectd-influxdb-and-grafana/
+	- Compile InfluxDB (Go)
+	- Compile Grafana (Go + Fscking node.js for asset creation)
+	- Use this for a collectd dashboard: https://github.com/torkelo/dashboards/tree/master/collectd-graphite-single-server
+	- Grafana uses LDAP for users	
+	
+## sFLow
+	- Host sFlow (C) + sflowtool (https://github.com/sflow/sflowtool in C) + a missing piece => Grafana
+		- There is sflow2graphite but it's in Perl
+		- There is http://blog.sflow.com/2017/01/telegraf-influxdb-chronograf-and.html
+	
