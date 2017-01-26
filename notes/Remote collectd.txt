@@ -1,0 +1,9 @@
+
+## Web Services
+- Librato
+- Splunk
+
+## Self Hosted
+- https://github.com/circonus-labs/reconnoiter
+- Prometheus
+	- Written in Go
