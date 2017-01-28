@@ -9,107 +9,155 @@ libertine_architecture_configure()
 	libertine_architecture_setHost "$libertine_architecture"
 }
 
-libertine_architecture_setHost()
-{
-	local architecture="$1"
-	
-	case "$architecture" in
-		
-		x86_64)
-			libertine_host='x86_64-linux-musl'
-			libertine_hostLinux='x86'
-			libertine_hostLinuxSpecific='x86_64'
-			libertine_hostCmakeProcessor='x86_64'
-			libertine_hostForMuslLd='ld-musl-x86_64.so.1'
-			libertine_hostAutoconf='x86_64-pc-linux-musl'
-			libertine_hostShorter='x86_64-linux-musl'
-			libertine_hostIsBigEndian='false'
-			libertine_hostIs64Bit=true
-			
-			# https://golang.org/doc/install/source#environment
-			libertine_hostGo='amd64'
-		;;
-		
-		# arm)
-		# 	libertine_hostLinux='arm'
-		#
-		#	libertine_hostForMuslLd='ld-linux-armhf.so.3'
-		#
-		# 	libertine_hostIsBigEndian='false'
-		# 	libertine_hostIs64Bit='false'
-		#	libertine_hostGo='arm'
-		#	libertine_hostGoArm='7'  # 5, 6 or 7
-		# ;;
-		#
-		# mips*)
-		#
-		# 	libertine_hostForMuslLd="ld.so.1"
-		#
-		# ;;
-		#
-		# aarch64)
-		# 	libertine_hostLinux='arm64'
-		#
-		#
-		# 	libertine_hostIsBigEndian='false'
-		# 	libertine_hostIs64Bit='true'
-		#	libertine_hostGo='arm64'
-		# ;;
-		#
-		# x86)
-		#	libertine_hostForMuslLd="ld-linux.so.2"
-		#	libertine_hostGo='386'
-		#	libertine_hostGo386='sse2' # 387 or sse2
-		
-		*)
-			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) host architecture '$architecture"
-		;;
-		
-	esac
-}
-
 libertine_architecture_setBuild()
 {
 	local architecture="$1"
+
+	local _libertine_architecture_target
+	local _libertine_architecture_linux
+	local _libertine_architecture_linuxSpecific
+	local _libertine_architecture_cmakeProcessor
+	local _libertine_architecture_forMuslLd
+	local _libertine_architecture_autoconf
+	local _libertine_architecture_shorter
+	local _libertine_architecture_isBigEndian
+	local _libertine_architecture_is64Bit
+	local _libertine_architecture_nodeJsCpu
+	local _libertine_architecture_googleGoArch
+	local _libertine_architecture_googleGoArchArmVariant
+	local _libertine_architecture_googleGoArch386Variant
+	local _libertine_architecture_floatAbi
+	local _libertine_architecture_fpuMode
+	local _libertine_architecture_mipsArchitectureVariant
+	
+	_libertine_architecture_parse "$architecture" true
+	
+	libertine_buildOperatingSystem="$_libertine_architecture_operatingSystem"
+	libertine_build="$_libertine_architecture_target"
+	libertine_buildLinux="$_libertine_architecture_linux"
+	libertine_buildLinuxSpecific="$_libertine_architecture_linuxSpecific"
+	libertine_buildCmakeProcessor="$_libertine_architecture_cmakeProcessor"
+	libertine_buildForMuslLd="$_libertine_architecture_forMuslLd"
+	libertine_buildAutoconf="$_libertine_architecture_autoconf"
+	libertine_buildShorter="$_libertine_architecture_shorter"
+	libertine_buildIsBigEndian="$_libertine_architecture_isBigEndian"
+	libertine_buildIs64Bit="$_libertine_architecture_is64Bit"
+	libertine_buildNodeJsCpu="$_libertine_architecture_nodeJsCpu"
+	libertine_buildGoogleGoArch="$_libertine_architecture_googleGoArch"
+	libertine_buildGoogleGoArchArmVariant="$_libertine_architecture_googleGoArchArmVariant"
+	libertine_buildGoogleGoArch386Variant="$_libertine_architecture_googleGoArch386Variant"
+	libertine_buildFloatAbi="$_libertine_architecture_floatAbi"
+	libertine_buildFpuMode="$_libertine_architecture_fpuMode"
+	libertine_buildMipsArchitectureVariant="$_libertine_architecture_mipsArchitectureVariant"
+}
+
+libertine_architecture_setHost()
+{
+	local architecture="$1"
+
+	local _libertine_architecture_target
+	local _libertine_architecture_linux
+	local _libertine_architecture_linuxSpecific
+	local _libertine_architecture_cmakeProcessor
+	local _libertine_architecture_forMuslLd
+	local _libertine_architecture_autoconf
+	local _libertine_architecture_shorter
+	local _libertine_architecture_isBigEndian
+	local _libertine_architecture_is64Bit
+	local _libertine_architecture_nodeJsCpu
+	local _libertine_architecture_googleGoArch
+	local _libertine_architecture_googleGoArchArmVariant
+	local _libertine_architecture_googleGoArch386Variant
+	local _libertine_architecture_floatAbi
+	local _libertine_architecture_fpuMode
+	local _libertine_architecture_mipsArchitectureVariant
+	
+	_libertine_architecture_parse "$architecture" false
+	
+	libertine_hostOperatingSystem="$_libertine_architecture_operatingSystem"
+	libertine_host="$_libertine_architecture_target"
+	libertine_hostLinux="$_libertine_architecture_linux"
+	libertine_hostLinuxSpecific="$_libertine_architecture_linuxSpecific"
+	libertine_hostCmakeProcessor="$_libertine_architecture_cmakeProcessor"
+	libertine_hostForMuslLd="$_libertine_architecture_forMuslLd"
+	libertine_hostAutoconf="$_libertine_architecture_autoconf"
+	libertine_hostShorter="$_libertine_architecture_shorter"
+	libertine_hostIsBigEndian="$_libertine_architecture_isBigEndian"
+	libertine_hostIs64Bit="$_libertine_architecture_is64Bit"
+	libertine_hostNodeJsCpu="$_libertine_architecture_nodeJsCpu"
+	libertine_hostGoogleGoArch="$_libertine_architecture_googleGoArch"
+	libertine_hostGoogleGoArchArmVariant="$_libertine_architecture_googleGoArchArmVariant"
+	libertine_hostGoogleGoArch386Variant="$_libertine_architecture_googleGoArch386Variant"
+	libertine_hostFloatAbi="$_libertine_architecture_floatAbi"
+	libertine_hostFpuMode="$_libertine_architecture_fpuMode"
+	libertine_hostMipsArchitectureVariant="$_libertine_architecture_mipsArchitectureVariant"
+}
+
+_libertine_architecture_parse()
+{
+	local architecture="$1"
+	local isForBuild="$2"
+	
+	_libertine_architecture_operatingSystem='linux'
 	
 	case "$architecture" in
 		
 		x86_64)
-			# Done deliberately to try to avoid conflicts in build binaries
-			#libertine_build='x86_64-linux-musl'
-			libertine_build='x86_64-BUILD-linux-musl'
+			if $isForBuild; then
+				_libertine_architecture_target='x86_64-BUILD-linux-musl'
+			else
+				_libertine_architecture_target='x86_64-linux-musl'
+			fi
 			
-			libertine_buildLinux='x86'
-			libertine_buildLinuxSpecific='x86_64'
-			libertine_buildCmakeProcessor='x86_64'
-			libertine_buildForMuslLd='ld-musl-x86_64.so.1'
-			libertine_buildAutoconf='x86_64-pc-linux-musl'
-			libertine_buildShorter='x86_64-linux-musl'
-			libertine_buildIsBigEndian='false'
-			libertine_buildIs64Bit='true'
+			_libertine_architecture_linux='x86'
+			_libertine_architecture_linuxSpecific='x86_64'
+			_libertine_architecture_cmakeProcessor='x86_64'  # uname -p (although not amd64)
+			_libertine_architecture_forMuslLd='ld-musl-x86_64.so.1'
+			_libertine_architecture_autoconf='x86_64-pc-linux-musl'
+			_libertine_architecture_shorter='x86_64-linux-musl'
+			_libertine_architecture_isBigEndian='false'
+			_libertine_architecture_is64Bit='true'
+			_libertine_architecture_nodeJsCpu='x64'  # arm, arm64, ia32, mips, mipsel, ppc, ppc64, x32, x64, x86, s390, s390x
+			_libertine_architecture_googleGoArch='amd64'
+			_libertine_architecture_googleGoArchArmVariant=''
+			_libertine_architecture_googleGoArch386Variant=''  # 387 or sse2
 			
-			libertine_buildGoHostOs='linux'
-			libertine_buildGoHostArch='amd64'
+			_libertine_architecture_floatAbi=''  # although in reality, always hard
+			_libertine_architecture_fpuMode=''
+			_libertine_architecture_mipsArchitectureVariant=''
 		;;
 		
-		# arm)
-		# 	libertine_buildLinux='arm'
-		#
-		#
-		# 	libertine_buildIsBigEndian='false'
-		# 	libertine_buildIs64Bit='false'
-		# ;;
-		#
-		# aarch64)
-		# 	libertine_buildLinux='arm64'
-		#
-		#
-		# 	libertine_buildIsBigEndian='false'
-		# 	libertine_buildIs64Bit='true'
-		# ;;
+		# An ARM7 hard float (HF) variant (currently untested; some of the triples may be wrong)
+		arm)
+			if $isForBuild; then
+				_libertine_architecture_target='arm-BUILD-linux-musleabihf'
+			else
+				_libertine_architecture_target='arm-linux-musleabihf'
+			fi
+			
+			_libertine_architecture_linux='arm'
+			_libertine_architecture_linuxSpecific='arm'
+			_libertine_architecture_cmakeProcessor='armv7l'  # uname -p (so can )
+			_libertine_architecture_forMuslLd='ld-linux-armhf.so.3'
+			_libertine_architecture_autoconf='armv7l-pc-linux-musleabihf'
+			_libertine_architecture_shorter='arm-linux-musleabihf'
+			_libertine_architecture_isBigEndian='false'
+			_libertine_architecture_is64Bit='false'
+			_libertine_architecture_nodeJsCpu='arm'
+			_libertine_architecture_googleGoArch='arm'
+			_libertine_architecture_googleGoArchArmVariant='7'  # 5, 6 or 7; see https://golang.org/doc/install/source ; affects floating point
+			_libertine_architecture_googleGoArch386Variant=''
+			
+			_libertine_architecture_floatAbi='hard'  # soft, softfp, hard (comes from NodeJS);  for MIPS, would be soft, hard
+			_libertine_architecture_fpuMode='vfpv3'  # vfp, vfpv3, vfpv3-d16, neon, none (comes from NodeJS);  for MIPS, would be fp32, fp64, fpxx
+			_libertine_architecture_mipsArchitectureVariant=''  # for MIPS, loongson, r1, r2, r6, rx
+		;;
+		
+		# We would support settings for aarch64, powerpc64 little endian (new API) and possibly s390x for IBM RockHopper
+		# i486 / i586 / i686 (IA-32) isn't really a sensible choice in 2017
 		
 		*)
-			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) build architecture '$architecture'"
+			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) architecture '$architecture"
 		;;
 		
 	esac
