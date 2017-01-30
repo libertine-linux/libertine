@@ -243,6 +243,8 @@ _libertine_configsite_createInvariant()
 		ac_cv_file__dev_ptc=no
 		ac_cv_file__etc_default_login=no
 		ac_cv_flock_decl=yes
+		ac_cv_fread_reads_directories=no
+		ac_cv_snprintf_returns_bogus=no
 		ac_cv_func_abort=yes
 		ac_cv_func_acosf=yes
 		ac_cv_func_acosh=yes

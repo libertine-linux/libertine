@@ -24,33 +24,64 @@ libertine_path_installBuildBinariesProvided()
 	popd
 }
 
+libertine_path_fakeUname_forBuild()
+{
+	local shellFilePath="$1"
+	local binFilePath="$2"
+	
+	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_buildUnameArchitecture" "$libertine_buildUnameOperatingSystem" "$libertine_buildUnameTimestamp"
+}
+
+libertine_path_fakeUname_forHost()
+{
+	local shellFilePath="$1"
+	local binFilePath="$2"
+	
+	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_hostUnameArchitecture" "$libertine_hostUnameOperatingSystem" "$libertine_hostUnameTimestamp"
+}
+
 core_dependency_requires '*' cat chmod sh
 _libertine_path_fakeUname()
 {
-	local binFolderPath="$1"
+	local shellFilePath="$1"
+	local binFilePath="$2"
+	local architecture="$3"
+	local operatingSystem="$4"
+	local timestamp="$5"
 	
-	local filePath="$binFolderPath"/uname
+	local kernelName="$operatingSystem"
+	local osName="$operatingSystem"
+	
+	# This, obviously, won't match the actual version of linux we are building. However, it does encode (a) it's modern and (b) it's grsecurity enabled
+	# If necessary, over time, we can adjust this slightly. It is possible to extract the version of linux we're building (see packages/linux/linux-patches/apply-patches, function apply_patches_findLinuxVersion)
+	# However, for that to be accurate, it would have to be extracted to its own little script and run only after linux has been patched. Quite complex.
+	# We are only faking uname for the small number of tools (eg git, I'm looking at you) that use it to work out how to change settings even when cross-compiling...
+	local kernelVersion='4.4.35-0-grsec'
 	
 	{
-		printf '#!%s\n' "$binFolderPath"/sh
-		cat <<'EOF'
+		cat <<EOF
+#!${shellFilePath}
 # This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
 
 set -e
 set -u
 set -f
 
+architecture='${architecture}'
+kernelName='${kernelName}'
+osName='${osName}'
+kernelVersion='#1-Libertine SMP ${timestamp}'
+kernelRelease='${kernelVersion}'
+
+EOF
+		cat <<'EOF'
 uname_main()
 {
-	local architecture='x86_64'
 	local hostName='libertine'
-	local kernelRelease='4.4.35-0-grsec'
-	local kernelName='Linux'
 	local processorType='unknown'
-	local kernelVersion='#1-Libertine SMP Thu Jun 16 09:22:17 UTC 2016'
 	local hardwarePlatform='unknown'
-	local osName='Linux'
 
 	if [ $# -eq 0 ]; then
 		printf '%s\n' "$kernelName"
@@ -111,9 +142,9 @@ uname_main()
 
 uname_main "$@"
 EOF
-	} >"$filePath"
+	} >"$binFilePath"
 	
-	chmod +x "$filePath"
+	chmod +x "$binFilePath"
 }
 
 _libertine_path_systemEssentials()
@@ -205,8 +236,9 @@ libertine_path_exportPATH()
 		local baseInfoMessage="    ${_libertine_compile_depth}Package '$package' needs binary '$binary' to build"
 		
 		if [ "$binary" = 'uname' ]; then
-			core_message INFO "$baseInfoMessage (faked)"
-			_libertine_path_fakeUname "$ourPATH"
+			core_message INFO "$baseInfoMessage (faked for build)"
+			libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
+			ln -s fake-uname-build "$ourPATH"/uname
 			return 0
 		fi
 		

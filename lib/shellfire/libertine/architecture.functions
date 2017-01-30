@@ -17,6 +17,11 @@ libertine_architecture_setBuild()
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
 	local _libertine_architecture_cmakeProcessor
+	local _libertine_architecture_unameArchitecture
+	local _libertine_architecture_unameOperatingSystem
+	local _libertine_architecture_unameTimestampSecondsSince1970
+	local _libertine_architecture_unameTimestampTouch
+	local _libertine_architecture_unameTimestamp
 	local _libertine_architecture_forMuslLd
 	local _libertine_architecture_autoconf
 	local _libertine_architecture_shorter
@@ -37,6 +42,11 @@ libertine_architecture_setBuild()
 	libertine_buildLinux="$_libertine_architecture_linux"
 	libertine_buildLinuxSpecific="$_libertine_architecture_linuxSpecific"
 	libertine_buildCmakeProcessor="$_libertine_architecture_cmakeProcessor"
+	libertine_buildUnameArchitecture="$_libertine_architecture_unameArchitecture"
+	libertine_buildUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
+	libertine_buildUnameTimestamp="$_libertine_architecture_unameTimestamp"
+	libertine_buildUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
+	libertine_buildUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
 	libertine_buildForMuslLd="$_libertine_architecture_forMuslLd"
 	libertine_buildAutoconf="$_libertine_architecture_autoconf"
 	libertine_buildShorter="$_libertine_architecture_shorter"
@@ -59,6 +69,11 @@ libertine_architecture_setHost()
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
 	local _libertine_architecture_cmakeProcessor
+	local _libertine_architecture_unameArchitecture
+	local _libertine_architecture_unameOperatingSystem
+	local _libertine_architecture_unameTimestamp
+	local _libertine_architecture_unameTimestampSecondsSince1970
+	local _libertine_architecture_unameTimestampTouch
 	local _libertine_architecture_forMuslLd
 	local _libertine_architecture_autoconf
 	local _libertine_architecture_shorter
@@ -79,6 +94,11 @@ libertine_architecture_setHost()
 	libertine_hostLinux="$_libertine_architecture_linux"
 	libertine_hostLinuxSpecific="$_libertine_architecture_linuxSpecific"
 	libertine_hostCmakeProcessor="$_libertine_architecture_cmakeProcessor"
+	libertine_hostUnameArchitecture="$_libertine_architecture_unameArchitecture"
+	libertine_hostUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
+	libertine_hostUnameTimestamp="$_libertine_architecture_unameTimestamp"
+	libertine_hostUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
+	libertine_hostUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
 	libertine_hostForMuslLd="$_libertine_architecture_forMuslLd"
 	libertine_hostAutoconf="$_libertine_architecture_autoconf"
 	libertine_hostShorter="$_libertine_architecture_shorter"
@@ -99,6 +119,10 @@ _libertine_architecture_parse()
 	local isForBuild="$2"
 	
 	_libertine_architecture_operatingSystem='linux'
+	_libertine_architecture_unameOperatingSystem='Linux'
+	_libertine_architecture_unameTimestamp='Thu Jun 16 09:22:17 UTC 2016'
+	_libertine_architecture_unameTimestampSecondsSince1970='1466068937'
+	_libertine_architecture_unameTimestampTouch='201606160922.17'
 	
 	case "$architecture" in
 		
@@ -112,6 +136,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_linux='x86'
 			_libertine_architecture_linuxSpecific='x86_64'
 			_libertine_architecture_cmakeProcessor='x86_64'  # uname -p (although not amd64)
+			_libertine_architecture_unameArchitecture='x86_64'  # uname -m
 			_libertine_architecture_forMuslLd='ld-musl-x86_64.so.1'
 			_libertine_architecture_autoconf='x86_64-pc-linux-musl'
 			_libertine_architecture_shorter='x86_64-linux-musl'
@@ -138,6 +163,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_linux='arm'
 			_libertine_architecture_linuxSpecific='arm'
 			_libertine_architecture_cmakeProcessor='armv7l'  # uname -p (so can )
+			_libertine_architecture_unameArchitecture='arm'
 			_libertine_architecture_forMuslLd='ld-linux-armhf.so.3'
 			_libertine_architecture_autoconf='armv7l-pc-linux-musleabihf'
 			_libertine_architecture_shorter='arm-linux-musleabihf'

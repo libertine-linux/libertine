@@ -1047,18 +1047,19 @@ libertine_public_cmake_prepare()
 
 core_dependency_requires '*' rm mkdir
 libertine_public_cmake()
-{
-	libertine_cmake_createToolchainFile
-	
+{	
 	local buildFolderName='.libertine-cmake-build'
 	rm -rf "$buildFolderName"
 	mkdir -m 0700 -p "$buildFolderName"
 	
-	pushd "$buildFolderName"	
+	pushd "$buildFolderName"
+
+		libertine_cmake_createToolchainFile
+		
 		cmake \
 			--trace --debug-trycompile \
 			-G 'Unix Makefiles' \
-			-DCMAKE_TOOLCHAIN_FILE="$(pwd)"/../toolchain.cmake \
+			-DCMAKE_TOOLCHAIN_FILE="$(pwd)"/toolchain.cmake \
 			-Wno-error=dev -Wno-deprecated -Wno-error=deprecated \
 			"$@" \
 			.. \
@@ -1118,28 +1119,24 @@ libertine_public_secureBinary()
 	
 	case "$#" in
 		
-		0)
-			paxHeaderCreationMode='convert'
-			
+		0)	
 			# Most secure setting
 			flags='PSMeRx'
+			paxHeaderCreationMode='convert'
 			
 		;;
 		
 		1)
-			paxHeaderCreationMode="$1"
-			
-			# Most secure setting
-			flags='PSMeRx'
+			flags="$1"
+			paxHeaderCreationMode='convert'
 		;;
 		
 		2)
-			paxHeaderCreationMode="$1"
-			
-			flags="$2"
+			flags="$1"
 			if [ ${#flags} -ne 6 ]; then
 				core_exitError 1 "Please supply a 6-character PaX flag string, eg PSMeRx, see http://www.linuxhowtos.org/manpages/1/paxctl-ng.htm for examples"
 			fi
+			paxHeaderCreationMode="$2"
 		;;
 		
 		*)
