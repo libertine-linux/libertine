@@ -1172,31 +1172,3 @@ libertine_public_secureBinary()
 	paxctl -"$flags" "$binaryFilePath"
 	
 }
-
-# libertine_public_goHostCrossCompile()
-# {
-# 	local package="$1"
-# 	# ? go get cgt.name/pkg/blookup
-#
-# 	# GOROOT=""
-# 	# GOROOT_FINAL='/usr'
-# 	# GOROOT_FINAL
-# 	# GOBIN="$GOROOT"/bin
-#
-# 	case "$libertine_hostGo" in
-#
-# 		arm)
-# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GOARM="$libertine_hostGoArm" go build -v "$package"
-# 		;;
-#
-# 		386)
-# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" GO386="$libertine_hostGo386" go build -v "$package"
-# 		;;
-#
-# 		*)
-# 			GOHOSTOS="$libertine_buildGoHostOs" GOHOSTARCH="$libertine_buildGoHostArch" GOOS=linux GOARCH="$libertine_hostGo" go build -v "$package"
-# 		;;
-#
-# 	esac
-#
-# }
