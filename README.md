@@ -41,6 +41,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* This allows total versioning - something not other system using a package manager can achieve
 	* Use source control administrative policies to control all server definitions in your estate
 	* Cryptographic hashes are used to determine if rebuilds are required (like NixOS, but without the package management)
+	* Sadly this is not true for anything using `npm`; currently this is just grafana
 * Everything runs from RAM; disk is only used for persistent data if configured
 	* All data is lost on power off
 	* No need for a initrd, disk, etc; everything is inside one linux kernel image
@@ -53,7 +54,10 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* Empty drives for persistent storage can be created on first boot (see `montebianco/montebianco-qemu`)
 * Extremely Secure
 	* No loadable modules; highly resistant to module-based rootkit attacks
-	* Persistent storage uses encrypted ZFS
+	* Kernel is built with PaX and grsecurity
+		* With full protections; for instance, the TCP stack always plays dead
+	* ~~Persistent storage uses encrypted ZFS~~
+		* ZFS is currently broken for a grsecurity-patched Linux
 	* No package manager
 		* No way to install packages at runtime
 	* No unnecessary packages with an extremely small footprint
@@ -63,13 +67,14 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 		* Useless legacy cruft not installed (`su`, floppy disk programs, `chat`, `cal`, `ftp`, `telnet` etc)
 		* Only the desired timezone data (UTC by default) and keyboard maps and console fonts installed
 	* All libraries are statically linked; .so symlink attacks and `LD_PRELOAD` are impossible
+		* With the exception of `nodejs`, which simply doesn't work with common modules in this case (eg `node-sass`)
+		* With the exception of bespoke builds of `luajit`, which need to use `dlopen()`
 	* Compilation uses hardened settingd
 		* Full RELRO (`-Wl,-z,relro,-z,now`)
 		* Uses a strong stack smashing protector (`-fstack-protector-string`)
 		* Uses `_FORTIFY_SOURCE`
-		* ~~Uses Position-Independent-Executables for statically linked binaries~~
-			* Breaks ZFS on Linux (eg `zed`) and OpenSSH
-		* Sadly, grsec and PaX are not enabled as they are now private code
+		* Uses Position-Independent-Executables for statically linked binaries, aka 'static PIE'
+			* ~~Breaks ZFS on Linux (eg `zed`) and OpenSSH~~
 	* Kernel auditing enabled
 		* Used by OpenSSH (which is an optional dependency)
 		* Used by Sudo (which is an optional dependency)
@@ -106,6 +111,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* Static Routes
 	* Tunnels (TUN devices)
 	* ~NFTables Firewalls~ (and hence legacy iftables)
+		* To do
 	* By default, we use a large list of known spam, etc hosts and block them with duff entries in `/etc/hosts`.
 * The set of software packages and their configuration for a machine, are just plain text files and so are easy to store in source control
 	* All files like `/etc/hosts` are created at compile time from snippets in folders like `/etc/hosts.d/*.hosts`
@@ -176,9 +182,6 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 			* `passwd` - for the passwd file `/etc/passwd`
 			* `shadow` - for shadow files, such as `/etc/shadow` and `/etc/gshadow`
 			* `group` - for the group file `/etc/group`
-	* The following are not yet combined but might be:-
-		* `/etc/resolv.conf`
-		* `/etc/os-release`
 	* The following are used as snippets by native programs:-
 		* `/etc/network/if-pre-down.d`
 		* `/etc/network/if-down.d`
@@ -192,6 +195,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 		* `/etc/network/iproute2/rt_dsfield` (note there is no trailing `.d`)
 		* `/etc/network/iproute2/rt_realms` (note there is no trailing `.d`)
 * Random entropy is increased at boot time by downloading (over https) from random.org
+	* *Sadly currently not reliable*
 	* We do not use Ubuntu's pollinate service as it is far too Ubuntu-specific
 	* We would like to add support for tpm-tools
 	* Where possible, grsecurity is used to increase kernel entropy
