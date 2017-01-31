@@ -241,6 +241,7 @@ _libertine_configsite_createInvariant()
 		ac_cv_exeext=${ac_cv_exeext=''}
 		ac_cv_f77_compiler_gnu=no
 		ac_cv_file__dev_ptc=no
+		ac_cv_file__dev_zero=yes
 		ac_cv_file__etc_default_login=no
 		ac_cv_flock_decl=yes
 		ac_cv_fread_reads_directories=no
@@ -1621,6 +1622,7 @@ _libertine_configsite_createInvariant()
 		am_cv_make_support_nested_variables=yes
 		am_cv_prog_cc_c_o=yes
 		am_cv_prog_tar_pax=gnutar
+		
 		ax_cv_have_tls=yes
 
 		bash_cv_func_sigsetjmp=yes
