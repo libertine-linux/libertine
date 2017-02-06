@@ -234,7 +234,7 @@ _libertine_path_exportPATH_findHostBinaryAlternativePath()
 	do
 		local hostPath="$(_libertine_path_exportPATH_findHostBinaryPath "$alternativeBinary")"
 		if [ -n "$hostPath" ]; then
-			core_message INFO "          Using host binary '$binaryNeeded' alterative '$alternativeBinary' from host PATH at '$hostPath' to build '$package'"
+			core_message INFO "          Using alt  binary '$binaryNeeded' alternative '$alternativeBinary' from host PATH at '$hostPath' to build '$package'"
 
 			pushd "$ourPATH"
 				ln -s "$hostPath" "$binaryNeeded"
@@ -299,7 +299,7 @@ _libertine_path_exportPATH_findNeededBinary()
 			local relativePath="$(libertine_public_relativeOutputPath "$dependentPackage")"/build-provides/"$binaryNeeded"
 
 			pushd "$ourPATH"
-				core_message INFO "          Using real binary '$binaryNeeded' from dependent package '$dependentPackage' to build '$package'"
+				core_message INFO "          Using our  binary '$binaryNeeded' from dependent package '$dependentPackage' to build '$package'"
 				ln -s "$relativePath" "$binaryNeeded"
 			popd
 			
