@@ -1,1 +1,1 @@
-../../../../packages/build_busybox/build_busybox.mk
+../../../packages/build_busybox/build_busybox.mk

@@ -1,1 +1,1 @@
-../../../../packages/linux_prep/linux_prep.mk
+../../../packages/linux_prep/linux_prep.mk

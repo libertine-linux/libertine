@@ -34,6 +34,7 @@ libertine_architecture_setBuild()
 	local _libertine_architecture_floatAbi
 	local _libertine_architecture_fpuMode
 	local _libertine_architecture_mipsArchitectureVariant
+	local _libertine_architecture_hasAesAcceleration
 	
 	_libertine_architecture_parse "$architecture" true
 	
@@ -59,6 +60,7 @@ libertine_architecture_setBuild()
 	libertine_buildFloatAbi="$_libertine_architecture_floatAbi"
 	libertine_buildFpuMode="$_libertine_architecture_fpuMode"
 	libertine_buildMipsArchitectureVariant="$_libertine_architecture_mipsArchitectureVariant"
+	libertine_buildHasAesAcceleration="$_libertine_architecture_hasAesAcceleration"
 }
 
 libertine_architecture_setHost()
@@ -86,6 +88,7 @@ libertine_architecture_setHost()
 	local _libertine_architecture_floatAbi
 	local _libertine_architecture_fpuMode
 	local _libertine_architecture_mipsArchitectureVariant
+	local _libertine_architecture_hasAesAcceleration
 	
 	_libertine_architecture_parse "$architecture" false
 	
@@ -111,6 +114,7 @@ libertine_architecture_setHost()
 	libertine_hostFloatAbi="$_libertine_architecture_floatAbi"
 	libertine_hostFpuMode="$_libertine_architecture_fpuMode"
 	libertine_hostMipsArchitectureVariant="$_libertine_architecture_mipsArchitectureVariant"
+	libertine_hostHasAesAcceleration="$_libertine_architecture_hasAesAcceleration"
 }
 
 _libertine_architecture_parse()
@@ -150,6 +154,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_floatAbi=''  # although in reality, always hard
 			_libertine_architecture_fpuMode=''
 			_libertine_architecture_mipsArchitectureVariant=''
+			_libertine_architecture_hasAesAcceleration='true'
 		;;
 		
 		# An ARM7 hard float (HF) variant (currently untested; some of the triples may be wrong)
@@ -177,6 +182,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_floatAbi='hard'  # soft, softfp, hard (comes from NodeJS);  for MIPS, would be soft, hard
 			_libertine_architecture_fpuMode='vfpv3'  # vfp, vfpv3, vfpv3-d16, neon, none (comes from NodeJS);  for MIPS, would be fp32, fp64, fpxx
 			_libertine_architecture_mipsArchitectureVariant=''  # for MIPS, loongson, r1, r2, r6, rx
+			_libertine_architecture_hasAesAcceleration='false'
 		;;
 		
 		# We would support settings for aarch64, powerpc64 little endian (new API) and possibly s390x for IBM RockHopper

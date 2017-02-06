@@ -128,17 +128,14 @@ libertine_public_outputPath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"
-}
+	
+	local packageComputedHashResultFilePath="$(_libertine_hash_computedHashResultFilePath "$package")"
+	local packageHash="$(cat "$packageComputedHashResultFilePath")"
+	
+	local cachedBuiltPackageVariantsFolderPath="$libertine_packageCacheOutputFolderPath"/"$package"
+	local cachedBuiltPackageFolderPath="$cachedBuiltPackageVariantsFolderPath"/"$packageHash"
 
-libertine_public_outputHashPath()
-{
-	if [ $# -eq 0 ]; then
-		local package="$package"
-	else
-		local package="$1"
-	fi
-	printf '%s' "$(libertine_public_outputPath "$package")"/hash
+	printf '%s' "$cachedBuiltPackageFolderPath"
 }
 
 libertine_public_outputBuildSysrootPath()
@@ -992,9 +989,14 @@ libertine_public_autoconf_replaceWithKnownVersionOfGnulib()
 	libertine_public_copy "$(libertine_public_outputMiscPath build_gnulib)"/. "$destinationFolderPath"
 }
 
+libertine_public_autoconf_modernAutoconfConfigureOptions()
+{
+	_libertine_public_autoconf_modernAutoconfConfigure "$@"
+}
+
 libertine_public_autoconf_modernAutoconfConfigureForBuild()
 {
-	_libertine_public_autoconf_modernAutoconfConfigure true "$@"
+	_libertine_public_autoconf_modernAutoconfConfigure true true "$@"
 }
 
 libertine_public_autoconf_modernAutoconfConfigure()
@@ -1012,14 +1014,15 @@ libertine_public_autoconf_modernAutoconfConfigure()
 		
 	esac
 	
-	_libertine_public_autoconf_modernAutoconfConfigure "$forBuild" "$@"
+	_libertine_public_autoconf_modernAutoconfConfigure "$forBuild" true "$@"
 }
 
 core_dependency_requires '*' rm cp
 _libertine_public_autoconf_modernAutoconfConfigure()
 {
 	local forBuild="$1"
-	shift 1
+	local recreateConfigSite="$2"
+	shift 2
 	
 	if $forBuild; then
 		local host="$libertine_build"
@@ -1029,8 +1032,10 @@ _libertine_public_autoconf_modernAutoconfConfigure()
 	
 	libertine_public_adjustShaBang configure
 	
-	# Creates config.cache in PWD
-	libertine_configsite_create "$forBuild"
+	if $recreateConfigSite; then
+		# Creates config.cache in PWD
+		libertine_configsite_create "$forBuild"
+	fi
 	CONFIG_SITE="$(libertine_public_inputSysrootPath)"/etc/config.site ./configure -C --build="$libertine_build" --host="$host" "$@"	
 }
 

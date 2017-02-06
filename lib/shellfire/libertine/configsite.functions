@@ -2,12 +2,15 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-core_dependency_requires '*' rm cp
+core_dependency_requires '*' rm mkdir cp
 libertine_configsite_create()
 {
 	local forBuild="$1"
 	
 	local sysroot="$(libertine_public_inputSysrootPath)"
+
+	local outputFilePath="$(libertine_public_inputSysrootPath)"/etc/config.site
+	mkdir -m 0755 -p "$sysroot"/etc
 	
 	local rootPrefix
 	_libertine_configsite_rootPrefix
@@ -18,8 +21,7 @@ libertine_configsite_create()
 	
 	# In case a package ships this in error
 	rm -rf config.cache
-	
-	cp "$sysroot"/etc/config.site config.cache
+	cp "$outputFilePath" config.cache
 }
 
 _libertine_configsite_rootPrefix()
@@ -50,8 +52,6 @@ _libertine_configsite_appendWithPrefix()
 {
 	local rootPrefix="$1"
 	local package="$2"
-	
-	local outputFilePath="$(libertine_public_inputSysrootPath)"/etc/config.site
 	
 	cat >>"$outputFilePath" <<-EOF
 		prefix=${rootPrefix}/usr
@@ -125,7 +125,7 @@ _libertine_configsite_append()
 		local isGccAssembler=yes
 	fi
 	
-	cat >>"$sysroot"/etc/config.site <<-EOF
+	cat >>"$outputFilePath" <<-EOF
 		ac_cv_build=${libertine_buildAutoconf}
 		ac_cv_c_bigendian=${isBigEndian}
 		ac_cv_c_compiler_gnu=${isGccCompiler}
@@ -179,13 +179,11 @@ _libertine_configsite_append()
 	EOF
 }
 
-core_dependency_requires '*' mkdir cat
+core_dependency_requires '*' cat
 _libertine_configsite_createInvariant()
 {
 	local sysroot="$1"
 	
-	mkdir -m 0755 -p "$sysroot"/etc
-	local outputFilePath="$sysroot"/etc/config.site
 	cat >"$outputFilePath" <<-'EOF'
 		cache_file=config.cache
 		program_prefix=NONE
@@ -564,6 +562,8 @@ _libertine_configsite_createInvariant()
 		ac_cv_func_poll=yes
 		ac_cv_func_popen=yes
 		ac_cv_func_posix_fadvise=yes
+		ac_cv_func_posix_getpwuid_r=yes
+		ac_cv_func_posix_getgrgid_r=yes
 		ac_cv_func_posix_madvise=yes
 		ac_cv_func_posix_spawn=yes
 		ac_cv_func_pow=yes

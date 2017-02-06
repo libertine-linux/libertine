@@ -14,28 +14,3 @@ libertine_check_pathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleT
 		core_exitError $core_commandLine_exitCode_CANTCREAT "The path '$_program_varPath' has spaces in it; autoconf and friends (eg CFLAGS) do not like this"
 	fi
 }
-
-core_dependency_requires '*' diff rm
-libertine_check_machineSettingsHash()
-{
-	local TMP_FILE
-	core_temporaryFiles_newFileToRemoveOnExit
-	local temporaryMachineHashFilePath="$TMP_FILE"
-	
-	libertine_check_calculateMachineSettingsHash >"$temporaryMachineHashFilePath"
-	
-	if [ -s "$libertine_machineHashFilePath" ]; then
-		if ! diff -a -q "$temporaryMachineHashFilePath" "$libertine_machineHashFilePath" 1>/dev/null; then
-			# Files differ, remove all packages
-			rm -rf "$libertine_machineOutputPackagesFolderPath"
-		fi
-	fi
-	
-	rm -rf "$libertine_machineHashFilePath"
-	mv "$temporaryMachineHashFilePath" "$libertine_machineHashFilePath"
-}
-
-libertine_check_calculateMachineSettingsHash()
-{
-	printf 'machine %s %s\n' "$libertine_machine" "$(_libertine_compile_hashValue "$libertine_machineSettingsFolderPath")"
-}

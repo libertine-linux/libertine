@@ -1,1 +1,1 @@
-../../../../packages/busybox/busybox.mk
+../../../packages/busybox/busybox.mk

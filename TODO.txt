@@ -219,6 +219,14 @@ endif
 
 9. Misc
 
+9.0 A decent syslog with TCP+TLS
+	- rsyslog uses gnutls
+	- syslog-ng is horrid to compile
+	- Busybox syslog doesn't have TCP or TLS
+	- We could write a rust program that reads from an unix socket and from a local UDP port then forwards over TCP+TLS with new standard RFC
+		- See https://unix.stackexchange.com/questions/205883/understand-logging-in-linux#206385 for ideas
+		- There is a rust crate for creating structured syslog messages and we've also done it
+
 9.1 Linux Improvements
 	- Verify RTM_LOCKS / https://lwn.net/Articles/544125/ Skylake+ enables Intel TSX
 	- taskset for 'whole-machine' daemons
@@ -231,6 +239,11 @@ endif
 9.2 Wikipedia
 	- Modify https://en.wikipedia.org/wiki/List_of_Linux_distributions_that_run_from_RAM
 	- Modify https://en.wikipedia.org/wiki/List_of_free_and_open-source_software_packages
+	- Entries on https://freshcode.club/
+
+9.3 Why autoconf is evil
+	- This silly error when pkg.m4 isn't present, because aclocal.m4 is built using the user's system... and so is unreproducible
+		- <https://blogs.oracle.com/mandy/entry/autoconf_weirdness>
 
 10 Rejected or Not in Scope
 	- TPM tools (not common enough, known problems with randomness being secure)

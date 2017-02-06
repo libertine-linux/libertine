@@ -1,0 +1,261 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+core_usesIn libertine git
+
+core_dependencyRequires '*' cat rm ln rmdir
+libertine_compile_buildDependencyIfRequiredAndAddOurselvesToItsListOfReverseDependencies()
+{
+	local ourPackage="$1"
+	local dependentPackage="$2"
+	
+	if [ "$ourPackage" = '.machine' ]; then
+		core_exitError $core_commandLine_exitCode_CONFIG "A package can not be called '(none)'"
+	fi
+	
+	local ourPackageComputedHashResultFilePath="$(_libertine_hash_computedHashResultFilePath "$ourPackage")"
+	local ourPackageHash="$(cat "$ourPackageComputedHashResultFilePath")"
+	
+	local dependentPackageComputedHashResultFilePath="$(_libertine_hash_computedHashResultFilePath "$dependentPackage")"
+	local dependentPackageHash="$(cat "$dependentPackageComputedHashResultFilePath")"
+	
+	local cachedBuiltDependentPackageVariantsFolderPath="$libertine_packageCacheOutputFolderPath"/"$dependentPackage"
+	local cachedBuiltDependentPackageFolderPath="$cachedBuiltDependentPackageVariantsFolderPath"/"$dependentPackageHash"
+
+	# Acquire a package lock
+	_libertine_compile_packageLock_acquirePerPackageMutexLock "$dependentPackage"
+
+		# Build cached package variant if required
+		if [ ! -f "$cachedBuiltDependentPackageFolderPath"/.built ]; then
+			
+			# This symlink exists purely for convenience when debugging output
+			local simpleBuildOutputFolderPathToMakeLifeEasierForDebugging="$libertine_machineOutputPackagesFolderPath"/"$dependentPackage"
+			rm -rf "$simpleBuildOutputFolderPathToMakeLifeEasierForDebugging"
+			ln -s "$libertine_packageCacheOutputFolderPath_relative_to_libertine_machineOutputPackagesFolderPath"/"$dependentPackage" "$simpleBuildOutputFolderPathToMakeLifeEasierForDebugging"
+			
+			libertine_compile_packageLock_doItWhilstLocked "$dependentPackage" "$ourPackage"
+		fi
+		printf '' >"$cachedBuiltDependentPackageFolderPath"/.built
+	
+		# Remove ourselves from all reverse dependencies, then add ourselves to a specific one
+	
+			# Remove from all reverse dependencies
+			set +f
+			local reverseDependencyFilePath
+			for reverseDependencyFilePath in "$cachedBuiltDependentPackageVariantsFolderPath"/*/reverse-dependencies/"$ourPackageHash"
+			do
+				set -f
+				if [ -e "$reverseDependencyFilePath" ]; then
+					rm -rf "$reverseDependencyFilePath"
+				fi
+			done
+			set -f
+		
+	
+			# Add ourselves to dependent package's particular hash list of reverse dependencies
+			local reverseDependenciesFolderPath="$cachedBuiltDependentPackageFolderPath"/reverse-dependencies/"$ourPackage"
+			mkdir -m 0700 -p "$reverseDependenciesFolderPath"
+			printf ''  >"$ourPackageHash"
+	
+	
+		# Destroy any built, cached packages no longer referenced by anyone
+		
+			# Remove empty reverse-dependencies folders
+			set +f
+			local reverseDependencyFolderPath
+			for reverseDependencyFolderPath in "$cachedBuiltDependentPackageVariantsFolderPath"/*/reverse-dependencies
+			do
+				set -f
+				if [ -e "$reverseDependencyFilePath" ]; then
+					# Will remove only if empty
+					rmdir "$reverseDependencyFolderPath" 1>/dev/null 2>/dev/null
+				fi
+			done
+			set -f
+		
+			# Remove built package if does not have a reverse-dependencies folder
+			set +f
+			local packageVariantFolderPath
+			for packageVariantFolderPath in "$cachedBuiltDependentPackageVariantsFolderPath"/*
+			do
+				set -f
+				if [ -e "$packageVariantFolderPath" ]; then
+				
+					if [ ! -e "$packageVariantFolderPath"/reverse-dependencies ]; then
+						rm -rf "$packageVariantFolderPath"
+					fi
+				fi
+			done
+			set -f
+		
+	# Release package lock
+	_libertine_compile_packageLock_releasePerPackageMutexLock
+}
+
+core_dependencyRequires '*' mkdir cat cp
+_libertine_hash_computePackageHash()
+{
+	local packageToUse="$1"
+	
+	local hashCalculationFolderPath="$(_libertine_hash_hashCalculationFolderPath "$packageToUse")"
+	mkdir -m 0700 -p "$hashCalculationFolderPath"
+	
+	local computedHashResultFilePath="$(_libertine_hash_computedHashResultFilePath "$packageToUse")"
+	if [ -s "$computedHashResultFilePath" ]; then
+		core_message NOTICE "${_libertine_compile_depth}Using existing hash '$(cat "$computedHashResultFilePath")' for package '$package'"
+		return 0
+	fi
+
+	core_message NOTICE "${_libertine_compile_depth}Calculating hash for package '$package'"
+	
+	# From machine:-
+	# 	Presence & content of "$package".config
+	# 	Presence & content of "$package.mk"
+	# 	Presence & contents of compiler-flags/
+	# 	Presence & contents of architecture
+	local configurationFileName
+	for configurationFileName in "$package".config "$package".mk
+	do
+		local configurationFilePath="$libertine_machinePackageConfigurationsFolderPath"/"$configurationFileName"
+		if [ -f "$configurationFilePath" ]; then
+			cp "$configurationFilePath" "$hashCalculationFolderPath"
+		fi
+	done
+	cp "$libertine_machineSettingsFolderPath"/architecture "$hashCalculationFolderPath"
+	cp -a -f -H "$libertine_machineSettingsFolderPath"/compiler-flags/. "$hashCalculationFolderPath"/
+	
+	# For linux package only, additionally from machine:-
+	# 	initramfs/ folder (presence, contents)
+	# 	initramfs.contents (presence, contents)
+	# 	packages.list (presence, contents)
+	if [ "$package" = 'linux' ]; then
+		mkdir -m 0700 -p "$hashCalculationFolderPath"/initramfs
+		if [ -d "$libertine_machineSettingsFolderPath"/initramfs ]; then
+			cp -a -f -H "$libertine_machineSettingsFolderPath"/initramfs/. "$hashCalculationFolderPath"/initramfs/
+		fi
+		
+		if [ -f "$libertine_machineSettingsFolderPath"/initramfs.contents ]; then
+			cp "$libertine_machineSettingsFolderPath"/initramfs.contents "$hashCalculationFolderPath"
+		fi
+		
+		if [ -f "$libertine_machineSettingsFolderPath"/packages.list ]; then
+			cp "$libertine_machineSettingsFolderPath"/packages.list "$hashCalculationFolderPath"
+		fi
+	fi
+	
+	# From package:-
+	#	(a) Has a .git file: Git hash (ignores local changes)
+	#	(b) Has a .git folder: Git hash (ignores local changes)
+	#	(c) No git folder: Full filesystem hash
+	local useDotGitFileOrFolder='true'
+	core_message INFO "${_libertine_compile_depth}Computing hash for input files of package '$package' in '$libertine_public_originalPackagePath'"
+	local computedPackageGitHash="$(_libertine_hash_hashValueOfFilesOrFolderOfMissing "$libertine_public_originalPackagePath" "$useDotGitFileOrFolder")"
+	printf '%s' "$computedPackageGitHash" >"$hashCalculationFolderPath"/git-hash
+	core_message INFO "${_libertine_compile_depth}Computed hash '${computedPackageGitHash}' for input files of package '$package'"
+	
+	# Now we need each dependent package's hash...
+	core_variable_array_iterate _libertine_compile_depends _libertine_hash_computePackageHashForDependency
+	
+	# Copy in each computed hash file
+	core_variable_array_iterate _libertine_compile_depends _libertine_hash_copyComputedPackageHashResultForDependency
+	
+	# Now compute the hash value of our inputs into "$computedHashResultFilePath"
+	local useDotGitFileOrFolder='false'
+	local ourHashOfAllInputs="$(_libertine_hash_hashValueOfFilesOrFolderOfMissing "$hashCalculationFolderPath" "$useDotGitFileOrFolder")"
+	printf '%s' "$ourHashOfAllInputs" >"$computedHashResultFilePath"
+
+	core_message NOTICE "${_libertine_compile_depth}Computed hash '$ourHashOfAllInputs' for package '$package'"
+	return 0
+}
+
+core_dependency_requires '*' find xargs stat sha512sum sort awk rm
+_libertine_hash_hashValueOfFilesOrFolderOfMissing()
+{
+	local path="$1"
+	local useDotGitFileOrFolder="$2"
+	
+	if [ ! -e "$path" ]; then
+		printf 'missing-0'
+		return 0
+	fi
+		
+	if [ -f "$path" ]; then
+		printf 'file-%s' "$(sha512sum "$path" | awk '{print $1}')"
+		return 0
+	fi
+	
+	if [ -d "$path" ]; then
+		if $useDotGitFileOrFolder; then
+			local revision="$(libertine_git_folderGitVersion "$path")"
+			if [ -n "$revision" ]; then
+				printf 'git-%s' "$revision"
+				return 0
+			fi
+		fi
+		
+		local TMP_FILE
+		core_temporaryFiles_newFileToRemoveOnExit
+		local hashesFilePath="$TMP_FILE"
+	
+		pushd "$path"
+	
+			{
+				# -mindepth 1 excludes '.'
+		
+				# File system structure
+				find . -mindepth 1 ! -name .git -print0 | xargs -0 -r stat -c '%N %a %s %T %t %F'
+	
+				# File contents
+				find . -mindepth 1 ! -name .git -type f -print0 | xargs -0 -r sha512sum
+	
+				# Contents, if any, of symlinks to files, otherwise errors (as a symlink may change from pointing to a file to a folder to an invalid location, etc)
+				find . -mindepth 1 ! -name .git -type l -print0 | xargs -0 -r sha512sum 2>&1 || true
+
+			} | sort >>"$hashesFilePath"
+
+			printf 'folder-%s' "$(sha512sum "$hashesFilePath" | awk '{print $1}')"
+
+			# Cleaned up by exit, but can be quite large
+			rm -rf "$hashesFilePath"
+		
+		popd
+	fi
+	
+	printf 'unsupported-0'
+}
+
+_libertine_hash_hashCalculationFolderPath()
+{
+	if [ $# -eq 1 ]; then
+		local packageToUse="$1"
+	else
+		local packageToUse="$package"
+	fi
+	printf '%s' "$libertine_packagesTemporaryFolderPath"/"$packageToUse"/hash-calculation
+}
+
+_libertine_hash_computedHashResultFilePath()
+{
+	if [ $# -eq 1 ]; then
+		local packageToUse="$1"
+	else
+		local packageToUse="$package"
+	fi
+	printf '%s' "$libertine_packagesTemporaryFolderPath"/"$packageToUse"/computed-hash-result
+}
+
+core_dependencyRequires '*' cp
+_libertine_hash_copyComputedPackageHashResultForDependency()
+{
+	local dependentPackage="$core_variable_array_element"
+	
+	local dependentFilePath="$(_libertine_hash_computedHashResultFilePath "$dependentPackage")"
+	local hashCalculationFolderPath="$(_libertine_hash_hashCalculationFolderPath "$packageToUse")"
+	cp "$dependentFilePath" "$hashCalculationFolderPath"
+}
+
+_libertine_hash_computePackageHashForDependency()
+{
+	_libertine_hash_computePackageHash "$core_variable_array_element"
+}

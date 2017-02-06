@@ -5,8 +5,8 @@
 
 _program()
 {
-	core_usesIn libertine check architecture path compile env configsite cmake
-	core_dependency_requires '*' uname mkdir
+	core_usesIn libertine check architecture path compile env configsite cmake hash
+	core_dependency_requires '*' uname rm mkdir
 	libertine()
 	{
 		umask 0000
@@ -22,24 +22,44 @@ _program()
 		libertine_machinePackageConfigurationsFolderPath="$libertine_machineFolderPath"/package-configurations
 		libertine_machineInputPackagesPath="$libertine_machineFolderPath"/packages
 				
-		libertine_machineOutputFolderPath="$libertine_machinesOutputFolderPath"/"$libertine_machine"
-		libertine_machineHashFilePath="$libertine_machineOutputFolderPath"/"$libertine_machine".hash
-		libertine_machineOutputPackagesFolderPath="$libertine_machineOutputFolderPath"/packages
+		libertine_machineOutputFolderPath="$libertine_machinesOutputFolderPath"/machines/"$libertine_machine"
+		libertine_machineOutputPackagesFolderPath="$libertine_machineOutputFolderPath"
+		
+		libertine_packageLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-locks
+		
+		# Do not change this; must be relative to libertine_machineOutputPackagesFolderPath, ie ../../.package-cache
+		libertine_packageCacheOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-cache
+		libertine_packageCacheOutputFolderPath_relative_to_libertine_machineOutputPackagesFolderPath=../../.package-cache
 		
 		libertine_check_pathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleThem
-
-		mkdir -m 0755 -p "$libertine_machinesOutputFolderPath" "$libertine_machineOutputFolderPath" "$libertine_machineOutputPackagesFolderPath"
+		
+		mkdir -m 0700 -p \
+			"$libertine_machinesOutputFolderPath" \
+			"$libertine_machineOutputFolderPath" \
+			"$libertine_machineOutputPackagesFolderPath" \
+			"$libertine_packageLocksOutputFolderPath" \
+			"$libertine_packageCacheOutputFolderPath"
 		
 		# TODO: Document this 'hack' - we have to know this data in advance of using musl-cross-make
 		. "$libertine_machineInputPackagesPath"/musl_cross_make/compiler-details
 		
-		libertine_check_machineSettingsHash
 		
 		libertine_architecture_configure
 		libertine_compile_configure
 		libertine_originalPATH="$PATH"
 		libertine_env_cleanse
+		
+		libertine_preparePackageTemporaryFolder
+		
+		libertine_compile_addLockTrapHandler
 		libertine_compile
+	}
+
+	libertine_preparePackageTemporaryFolder()
+	{
+		local TMP_FOLDER
+		core_temporaryFiles_newFolderToRemoveOnExit
+		libertine_packagesTemporaryFolderPath="$TMP_FOLDER"
 	}
 }
 

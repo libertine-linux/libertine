@@ -89,6 +89,26 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* Kernels can have built in command lines which can not be overridden on boot
 		* Use this to increase isolation from the pre-boot environment and bootloaders
 	* Inbound and Outbound firewalls are always on
+	* Syslogging uses TLS 1.2 over TCP with very modern cipher suites
+		* UDP is disabled except for localhost
+		* TCP is never used except with TLS 1.2
+		* By default, all logs are always shipped to a central syslog server; this could also be logstash or whatever
+	* Libressl is the preferred TLS library
+		* libressl (library and binary) and curl have been patched to have far more robust default ciphers
+			* Both have been patched to `ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256`
+			* This can be overriden by configuration
+			* This change affects all dependents, such as `git`, `syslog-ng`, BusyBox `wget` and others
+			* Previously libressl (both library and binary) was `ALL:!aNULL:!eNULL:!SSLv2`
+			* Previously curl was `LL:!EXPORT:!EXPORT40:!EXPORT56:!aNULL:!LOW:!RC4:@STRENGTH`
+		* Only Perfect Forward Securcy ciphers are enabled wherever possible
+			* ChaCha20 is preferred with AES-GCM a close second
+		* This change leaves ***nodejs vulnerable***, especially as ***npm*** (as it uses an internal ssl library)
+		* Likewise, ***go binaries are probably vulnerable***
+		* ***nodejs*** is very vulnerable, because iy uses it's own built-in openssl with features *only* supported by openssl
+			* And the attitude of the developers to recitfying this is poor: <https://github.com/nodejs/node/issues/428>
+			* Many of Node JS's CVEs are because of this
+			* Having built node.js, and had many issues with it and related tools, I have come to the conclusion that it's garbage
+			* ***DO NOT USE UNLESS YOU HAVE TO***
 * Custom kernels fully supported
 	* Build only the support in you need for maximum security
 * No systemd
