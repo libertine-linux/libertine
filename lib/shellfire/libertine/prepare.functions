@@ -1,0 +1,93 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+libertine_prepare_checkPathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleThem()
+{
+	local a
+	local b
+	IFS=' ' read -r a b <<-EOF
+		$_program_varPath
+	EOF
+
+	if [ -n "$b" ]; then
+		core_exitError $core_commandLine_exitCode_CANTCREAT "The path '$_program_varPath' has spaces in it; autoconf and friends (eg CFLAGS) do not like this"
+	fi
+}
+
+core_dependency_requires '*' mkdir
+libertine_prepare_setEssentialGlobalVariables()
+{
+	libertine_originalPATH="$PATH"
+	
+	libertine_machinesFolderPath="$libertine_machinesPath"
+	
+	#libertine_machinesOutputFolderPath=~/.l
+	libertine_machinesOutputFolderPath="$_program_path"/output
+	
+	mkdir -m 0700 -p "$libertine_machinesOutputFolderPath"
+}
+
+core_dependency_requires '*' uname
+libertine_prepare_sourceConfiguration()
+{
+	# This is an example configuration that is known to work on Alpine Linux
+	libertine_buildCCompilerCreationCFlags=''
+	libertine_buildCxxCompilerCreationCFlags=''
+
+	# This defaults the build architecture to whatever the current machine is
+	local libertine_buildArchitecture=''
+	if command -v uname 1>/dev/null 2>/dev/null; then
+		libertine_buildArchitecture="$(uname -m)"
+	else
+		libertine_buildArchitecture='x86_64'
+	fi
+	
+	if [ -s "$libertine_configuration" ]; then
+		. "$libertine_configuration"
+	fi
+
+	libertine_architecture_setBuild "$libertine_buildArchitecture"
+}
+
+core_dependency_requires '*' mkdir
+libertine_prepare_sharedCacheFolders()
+{
+	# Machine Locks
+	libertine_machineLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/.machine-locks
+	mkdir -m 0700 -p "$libertine_machineLocksOutputFolderPath"
+	
+	# Machine Caches
+	libertine_machineCachesOutputFolderPath="$libertine_machinesOutputFolderPath"/.machine-cache
+	mkdir -m 0700 -p "$libertine_machineCachesOutputFolderPath"
+	
+	# Package Locks
+	libertine_packageLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-locks
+	mkdir -m 0700 -p "$libertine_packageLocksOutputFolderPath"
+	
+	# Package Caches
+	libertine_packageCacheOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-cache
+	mkdir -m 0700 -p "$libertine_packageCacheOutputFolderPath"
+	
+	# ccache Cache (sic)
+	libertine_ccachePath="$libertine_machinesOutputFolderPath"/.ccache
+	mkdir -m 0700 -p "$libertine_ccachePath"
+}
+
+libertine_prepare_machineOutputFolders()
+{
+	libertine_machineOutputFolderPath="$libertine_machinesOutputFolderPath"/machines/"$libertine_machine"
+	mkdir -m 0700 -p "$libertine_machineOutputFolderPath"
+	
+	libertine_machineOutputPackagesFolderPath="$libertine_machineOutputFolderPath"
+	mkdir -m 0700 -p "$libertine_machineOutputPackagesFolderPath"
+}
+
+libertine_prepare_setEssentialMachineGlobalVariables()
+{
+	# Inputs for the machine '$libertine_machine'
+	libertine_machineFolderPath="$libertine_machinesFolderPath"/"$libertine_machine"
+	libertine_machineSettingsFolderPath="$libertine_machineFolderPath"/settings
+	libertine_machinePackageConfigurationsFolderPath="$libertine_machineFolderPath"/package-configurations
+	libertine_machineInputPackagesPath="$libertine_machineFolderPath"/packages
+}

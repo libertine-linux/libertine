@@ -189,7 +189,7 @@ _libertine_architecture_parse()
 		# i486 / i586 / i686 (IA-32) isn't really a sensible choice in 2017
 		
 		*)
-			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) architecture '$architecture"
+			core_exitError $core_commandLine_exitCode_CONFIG "Unsupported (or unknown) architecture '$architecture'"
 		;;
 		
 	esac

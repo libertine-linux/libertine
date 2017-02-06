@@ -2,42 +2,13 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-depends()
-{
-	local dependentPackage
-	for dependentPackage in "$@"
-	do
-		core_message NOTICE "${_libertine_compile_depth}Package '$package' depends on '$dependentPackage'"
-		core_variable_array_appendUniquely _libertine_compile_depends "$dependentPackage"
-	done
-}
-
-build_needs()
-{
-	local buildBinaryNeeded
-	for buildBinaryNeeded in "$@"
-	do
-		core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded "$buildBinaryNeeded"
-	done
-}
-
-build_provides()
-{
-	local buildBinaryProvided
-	for buildBinaryProvided in "$@"
-	do
-		core_message INFO "  ${_libertine_compile_depth}Package '$package' provides build binary '$buildBinaryProvided'"
-		core_variable_array_appendUniquely _libertine_compile_buildBinariesProvided "$buildBinaryProvided"
-	done
-}
-
 libertine_public_patch()
 {
 	echo "$@"
 	local patchRelativeFilePath
 	for patchRelativeFilePath in "$@"
 	do
-		core_message INFO "    ${_libertine_compile_depth}Patching using '$(libertine_public_packagePath)/patches/$patchRelativeFilePath"
+		core_message INFO "    Patching using '$(libertine_public_packagePath)/patches/$patchRelativeFilePath"
 		patch -p1 -i "$(libertine_public_packagePath)"/patches/"$patchRelativeFilePath" 1>&2
 	done
 }
@@ -61,16 +32,6 @@ libertine_public_patchAllEndingDotPatchInPatchesFolder()
 	libertine_public_patch "$@"
 }
 
-libertine_public_buildNeedsPath()
-{
-	if [ $# -eq 0 ]; then
-		local package="$package"
-	else
-		local package="$1"
-	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/build-needs
-}
-
 libertine_public_originalPackagePath()
 {
 	if [ $# -eq 0 ]; then
@@ -81,6 +42,57 @@ libertine_public_originalPackagePath()
 	printf '%s' "$libertine_machineInputPackagesPath"/"$package"
 }
 
+libertine_public_outputPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	
+	local packageHash
+	libertine_hash_forPackage "$package"
+	
+	if [ -z "$packageHash" ]; then
+		echo $PATH 1>&2
+		core_exitError 1 "Something went awry finding the packageHash for package '$package' - is cat on the PATH?"
+	fi
+	
+	local cachedBuiltPackageVariantsFolderPath="$libertine_packageCacheOutputFolderPath"/"$package"
+	local cachedBuiltPackageFolderPath="$cachedBuiltPackageVariantsFolderPath"/"$packageHash"
+
+	printf '%s' "$cachedBuiltPackageFolderPath"
+}
+
+libertine_public_relativeOutputPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	
+	local packageHash
+	libertine_hash_forPackage "$package"
+	
+	if [ -z "$packageHash" ]; then
+		echo $PATH 1>&2
+		core_exitError 1 "Something went awry finding the packageHash for package '$package' - is cat on the PATH?"
+	fi
+		
+	printf '%s' ../../../"$package"/"$packageHash"
+}
+
+libertine_public_buildNeedsPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/build-needs
+}
+
 libertine_public_packagePath()
 {
 	if [ $# -eq 0 ]; then
@@ -88,7 +100,7 @@ libertine_public_packagePath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/copy
+	printf '%s' "$(libertine_public_outputPath "$package")"/copy
 }
 
 libertine_public_sourcePath()
@@ -98,7 +110,7 @@ libertine_public_sourcePath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/copy/"$variant"
+	printf '%s' "$(libertine_public_packagePath "$package")"/"$variant"
 }
 
 libertine_public_inputMakePath()
@@ -108,7 +120,7 @@ libertine_public_inputMakePath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/input-make
+	printf '%s' "$(libertine_public_outputPath "$package")"/input-make
 }
 
 libertine_public_inputSysrootPath()
@@ -118,24 +130,7 @@ libertine_public_inputSysrootPath()
 	else
 		local package="$1"
 	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/input-sysroot
-}
-
-libertine_public_outputPath()
-{
-	if [ $# -eq 0 ]; then
-		local package="$package"
-	else
-		local package="$1"
-	fi
-	
-	local packageComputedHashResultFilePath="$(_libertine_hash_computedHashResultFilePath "$package")"
-	local packageHash="$(cat "$packageComputedHashResultFilePath")"
-	
-	local cachedBuiltPackageVariantsFolderPath="$libertine_packageCacheOutputFolderPath"/"$package"
-	local cachedBuiltPackageFolderPath="$cachedBuiltPackageVariantsFolderPath"/"$packageHash"
-
-	printf '%s' "$cachedBuiltPackageFolderPath"
+	printf '%s' "$(libertine_public_outputPath "$package")"/input-sysroot
 }
 
 libertine_public_outputBuildSysrootPath()
@@ -178,13 +173,6 @@ libertine_public_buildProvidesPath()
 	printf '%s' "$(libertine_public_outputPath "$package")"/build-provides
 }
 
-libertine_public_buildProvidesPathRelativeToCurrentPackagePATH()
-{
-	local otherPackage="$1"
-	
-	printf '%s' ../../"$otherPackage"/build-provides
-}
-
 libertine_public_outputInitramfsPath()
 {
 	if [ $# -eq 0 ]; then
@@ -213,6 +201,26 @@ libertine_public_outputKernelBootCommandLineFilePath()
 		local package="$1"
 	fi
 	printf '%s' "$(libertine_public_outputPath "$package")"/kernel-boot.command-line
+}
+
+libertine_public_outputDependenciesPath()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/dependencies
+}
+
+libertine_public_ccache_PATH()
+{
+	if [ $# -eq 0 ]; then
+		local package="$package"
+	else
+		local package="$1"
+	fi
+	printf '%s' "$(libertine_public_outputPath "$package")"/PATH-ccache
 }
 
 core_dependency_requires '*' cp find xargs rm
@@ -612,16 +620,6 @@ libertine_public_track_executable()
 	done
 	
 	export PATH="$path":"$PATH"
-}
-
-libertine_public_ccache_PATH()
-{
-	if [ $# -eq 0 ]; then
-		local package="$package"
-	else
-		local package="$1"
-	fi
-	printf '%s' "$libertine_machineOutputPackagesFolderPath"/"$package"/PATH-ccache
 }
 
 core_dependency_requires '*' mkdir cat chmod

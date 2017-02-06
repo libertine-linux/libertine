@@ -2,8 +2,6 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-syslog_ng
-
 00_baseline
 file
 curl

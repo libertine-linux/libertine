@@ -4,22 +4,31 @@
 
 libertine_path_installBuildBinariesProvided()
 {
-	libertine_path_installBuildBinariesProvided_callback()
-	{
-		local binary="$core_variable_array_element"
-		
-		local relativeBinaryPath=../build-sysroot/usr/bin/"$binary"
-				
-		if [ ! -x "$relativeBinaryPath" ]; then
-			core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary (assumed to be in usr/bin) '$binary' is not executable at '$(pwd)/$relativeBinaryPath' for package '$package'"
-		fi
-		
-		ln -s "$relativeBinaryPath" "$binary"
-	}
-	
 	pushd "$(libertine_public_buildProvidesPath)"
+
+		set +f
+		local binaryProvidedFolderPath
+		for binaryProvidedFolderPath in "$libertine_machineCacheOutputFolderPath"/"$package"/build_provides/*
+		do
+			set -f
+		
+			if [ ! -d "$binaryProvidedFolderPath" ]; then
+				continue
+			fi
+			
+			local binaryProvided="${binaryProvidedFolderPath##*/}"
+		
+			local relativeBinaryPath=../build-sysroot/usr/bin/"$binaryProvided"
+				
+			if [ ! -x "$relativeBinaryPath" ]; then
+				core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary (assumed to be in usr/bin) '$binaryProvided' is not executable at '$(pwd)/$relativeBinaryPath' for package '$package'"
+			fi
+		
+			ln -s "$relativeBinaryPath" "$binaryProvided"
+		
 	
-		core_variable_array_iterate _libertine_compile_buildBinariesProvided libertine_path_installBuildBinariesProvided_callback
+		done
+		set -f
 		
 	popd
 }
@@ -147,7 +156,7 @@ EOF
 	chmod +x "$binFilePath"
 }
 
-_libertine_path_systemEssentials()
+libertine_path_essentialBinaries()
 {
 	local callback="$1"
 	shift 1
@@ -172,7 +181,19 @@ _libertine_path_systemEssentials()
 					continue
 				fi
 				core_variable_array_append alreadyHandledProgramNames "$programName"
-				${callback} "$programName" "$@"
+				
+				case "$programName" in
+					
+					# Miscellaneous code brought in by shellfire that is almost certainly not needed ordinarily
+					apk|apt-get|rpm|urpmi|pkg|pkgin|pkg_add|emerge|kill|sudo)
+						:
+					;;
+			
+					*)
+						${callback} "$programName" "$@"
+					;;
+		
+				esac
 			;;
 
 			# Because of the heredoc, there's an extra blank line. A messy alternative is https://unix.stackexchange.com/questions/102891/posix-compliant-way-to-work-with-a-list-of-filenames-possibly-with-whitespace
@@ -189,99 +210,166 @@ _libertine_path_systemEssentials()
 		${_core_dependency_requires}
 	EOF
 	IFS="$originalIFS"
+
+	local programName
+	for programName in sh env
+	do
+		if core_variable_array_contains alreadyHandledProgramNames "$programName"; then
+			continue
+		fi
+		core_variable_array_append alreadyHandledProgramNames "$programName"
+		
+		${callback} "$programName" "$@"
+	done
 }
 
-core_dependency_requires '*' mkdir ln
-libertine_path_exportPATH()
+
+_libertine_path_exportPATH_findHostBinaryAlternativePath()
 {
-	local ourPATH="$(libertine_public_buildNeedsPath)"
-	mkdir -m 0755 -p "$ourPATH"
+	local binaryNeeded="$1"
+	shift 1
 	
-	# Add essential binaries
-	core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded env sh
+	local alternativeBinary
+	for alternativeBinary in "$@"
+	do
+		local hostPath="$(_libertine_path_exportPATH_findHostBinaryPath "$alternativeBinary")"
+		if [ -n "$hostPath" ]; then
+			core_message INFO "          Using host binary '$binaryNeeded' alterative '$alternativeBinary' from host PATH at '$hostPath' to build '$package'"
+
+			pushd "$ourPATH"
+				ln -s "$hostPath" "$binaryNeeded"
+			popd
+			return 0
+		fi
+	done
 	
-	# Add essential binaries to execute functions in public.functions, etc
-	_libertine_path_exportPATH_callback()
-	{
-		local binary="$1"
+	core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH' or an alternative"
+}
+
+_libertine_path_exportPATH_findHostBinaryPath()
+{
+	local binaryNeeded="$1"
+	
+	# Done this way, rather than with command -v "$binaryNeeded", as builtings like echo and print foul-up
+	local IFS=':'
+	set -- $PATH
+	
+	local path
+	for path in "$@"
+	do
+		if [ -n "$path" ]; then
+			local hostPath="$path"/"$binaryNeeded"
+			if [ -x "$hostPath" ]; then
+				printf '%s' "$hostPath"
+			fi
+		fi
+	done
+}
+
+core_dependency_requires '*' ln
+_libertine_path_exportPATH_findNeededBinary()
+{
+	local ourPATH="$1"
+	local binaryNeeded="$2"
+	local package="$3"
+
+	if [ "$binaryNeeded" = 'uname' ]; then
+		core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+		libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
+		ln -s fake-uname-build "$ourPATH"/uname
+		return 0
+	fi
+	
+	set +f
+	local dependentPackageFolderPath
+	for dependentPackageFolderPath in "$libertine_machineCacheOutputFolderPath"/"$package"/depends/*
+	do
+		set -f
 		
-		# Except don't add binaries that really aren't required (sudo, package managers, kill)
-		case "$binary" in
+		# Has no dependencies (or rubbish)
+		if [ ! -d "$dependentPackageFolderPath" ]; then
+			continue
+		fi
 		
-			sudo)
-				return 0
-			;;
+		local dependentPackage="${dependentPackageFolderPath##*/}"
+		local dependentPackageHasExecutable="$(libertine_public_outputPath "$dependentPackage")"/build-provides/"$binaryNeeded"
 		
-			apk|apt-get|rpm|urpmi|pkg|pkgin|pkg_add|emerge)
-				return 0
-			;;
+		if [ -x "$dependentPackageHasExecutable" ]; then
 			
-			# stat awk grep  needed outside of compile
+			local relativePath="$(libertine_public_relativeOutputPath "$dependentPackage")"/build-provides/"$binaryNeeded"
+
+			pushd "$ourPATH"
+				core_message INFO "          Using real binary '$binaryNeeded' from dependent package '$dependentPackage' to build '$package'"
+				ln -s "$relativePath" "$binaryNeeded"
+			popd
 			
-			# Miscellaneous code brought in by shellfire that is almost certainly not needed ordinarily
-			kill)
-				return 0
-			;;
-		
-		esac
-		
-		core_variable_array_appendUniquely _libertine_compile_buildBinariesNeeded "$binary"
-	}
-	_libertine_path_systemEssentials _libertine_path_exportPATH_callback
-	
-	libertine_path_exportPATH_addSymlinksToPath()
-	{
-		local binary="$core_variable_array_element"
-		
-		local baseInfoMessage="    ${_libertine_compile_depth}Package '$package' needs binary '$binary' to build"
-		
-		if [ "$binary" = 'uname' ]; then
-			core_message INFO "$baseInfoMessage (faked for build)"
-			libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
-			ln -s fake-uname-build "$ourPATH"/uname
 			return 0
 		fi
 		
-		libertine_path_exportPATH_addSymlinksToPath_findBuildProvidedBinaries()
-		{
-			# Iterates over packages already build in reverse order (ie most recent first)
-			local count=$#
-			local index=$count
-			while [ $index -ne 0 ]
-			do
-				eval local alreadyBuiltPackageInReverseOrder="\${$index}"
-				
-				local relativePath="$(libertine_public_buildProvidesPathRelativeToCurrentPackagePATH "$alreadyBuiltPackageInReverseOrder")"/"$binary"
-				if [ -x "$ourPATH"/"$relativePath" ]; then
-					pushd "$ourPATH"
-						core_message INFO "$baseInfoMessage (from package '$alreadyBuiltPackageInReverseOrder')"
-						ln -s "$relativePath" "$binary"
-					popd
-					
-					return 0
-				fi
-								
-				index=$((index-1))
-			done
-			
-			# Not provided by any package, search on default PATH
-			if command -v "$binary" 1>/dev/null 2>/dev/null; then
-				pushd "$ourPATH"
-					local hostPath="$(command -v "$binary")"
-					core_message INFO "$baseInfoMessage (from host PATH at '$hostPath')"
-					ln -s "$hostPath" "$binary"
-				popd
-			else
-				core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binary' needed to build the package '$package' in PATH '$PATH'"
-			fi
-		}
-		
-		# Iterates over packages already build in reverse order (ie most recent first)
-		core_variable_array_passToFunctionAsArguments _libertine_compile_built libertine_path_exportPATH_addSymlinksToPath_findBuildProvidedBinaries
-	}
+	done
+	set -f
 	
-	# Adds each needed binary into a PATH
-	core_variable_array_iterate _libertine_compile_buildBinariesNeeded libertine_path_exportPATH_addSymlinksToPath
+	# Not provided by any depends package, search on default PATH
+	
+	local hostPath="$(_libertine_path_exportPATH_findHostBinaryPath "$binaryNeeded")"
+	if [ -n "$hostPath" ]; then
+		core_message INFO "          Using host binary '$binaryNeeded' from host PATH at '$hostPath' to build '$package'"
+		pushd "$ourPATH"
+			ln -s "$hostPath" "$binaryNeeded"
+		popd
+		return 0
+	fi
+	
+	# Try to find an alternative that should provide basic functionality
+	case "$binaryNeeded" in
+		
+		cc)
+			_libertine_path_exportPATH_findHostBinaryAlternativePath cc clang gcc
+		;;
+		
+		c++)
+			_libertine_path_exportPATH_findHostBinaryAlternativePath c++ clang++ g++
+		;;
+	
+		awk)
+			_libertine_path_exportPATH_findHostBinaryAlternativePath awk gawk mawk nawk
+		;;
+	
+		sh)
+			_libertine_path_exportPATH_findHostBinaryAlternativePath sh dash ash bash mksh pdksh ksh88
+		;;
+		
+		*)
+			core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH'"
+		;;
+		
+	esac
+}
+
+core_dependency_requires '*' mkdir
+libertine_path_exportPATH()
+{
+	local ourPATH="$(libertine_public_buildNeedsPath "$package")"
+	mkdir -m 0755 -p "$ourPATH"
+
+	core_message INFO "      Finding binaries to build '$package'"
+	
+	set +f
+	local binaryNeededFolderPath
+	for binaryNeededFolderPath in "$libertine_machineCacheOutputFolderPath"/"$package"/build_needs/*
+	do
+		set -f
+
+		if [ ! -d "$binaryNeededFolderPath" ]; then
+			continue
+		fi
+		
+		local binaryNeeded="${binaryNeededFolderPath##*/}"
+
+		_libertine_path_exportPATH_findNeededBinary "$ourPATH" "$binaryNeeded" "$package"
+		
+	done
+	set -f
 	
 	export PATH="$ourPATH"
 }
