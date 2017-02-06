@@ -74,9 +74,8 @@ libertine_hash_computePackageHash()
 	#	(c) No git folder: Full filesystem hash
 	local useDotGitFileOrFolder='true'
 	local computedPackageGitHash="$(_libertine_hash_hashValueOfFiles "$(libertine_public_originalPackagePath)" "$useDotGitFileOrFolder")"
-	printf '%s' "$computedPackageGitHash" >"$hashCalculationFolderPath"/input-files-hash
 	
-	core_message WARN "git hash (input-files-hash) is broken"
+	printf '%s' "$computedPackageGitHash" >"$hashCalculationFolderPath"/input-files-hash
 	
 	# Compute hashes of dependencies and copy in
 	local dependenciesHashCalculationFolderPath="$hashCalculationFolderPath"/dependencies
@@ -106,7 +105,7 @@ libertine_hash_computePackageHash()
 	local ourHashOfAllInputs="$(_libertine_hash_hashValueOfFiles "$hashCalculationFolderPath" "$useDotGitFileOrFolder")"
 	printf '%s' "$ourHashOfAllInputs" >"$computedHashResultFilePath"
 
-	core_message NOTICE "Calculated hash of '$ourHashOfAllInputs' for package '$package'"
+	core_message INFO "    Calculated hash of '$ourHashOfAllInputs' for package '$package'"
 }
 
 libertine_hash_forPackage()
@@ -143,7 +142,7 @@ _libertine_hash_hashValueOfFiles()
 		if $useDotGitFileOrFolder; then
 			local revision="$(libertine_git_folderGitVersion "$path")"
 			if [ -n "$revision" ]; then
-				printf 'git-%s' "$revision"
+				printf '%s' "$revision"
 				return 0
 			fi
 		fi

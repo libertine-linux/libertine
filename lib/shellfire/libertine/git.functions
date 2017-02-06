@@ -62,7 +62,7 @@ libertine_git_folderGitVersion()
 			local refRelativeFilePath="$(awk '$1 ~ /^ref:$/ { print $2 }' "$headFilePath")"
 			local refFilePath="$gitFolderPath"/"$refRelativeFilePath"
 			local reference="$(cat "$refFilePath")"
-			printf '%s' "$refFilePath"
+			printf '%s' "$reference"
 		;;
 		
 		*)

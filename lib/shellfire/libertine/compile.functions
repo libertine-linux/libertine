@@ -440,6 +440,8 @@ _libertine_compile_calculateDependenciesForPackage()
 		continue
 	fi
 	
+	core_message INFO "    Calculating dependency for package '$parentPackage'"
+	
 	# this causes depends(), build_needs() and build_provides() to be called
 	local variant=''
 	local copy_subset=''
@@ -477,6 +479,10 @@ libertine_compile_prepare()
 core_dependency_requires '*' mkdir
 libertine_compile_calculateDependencies()
 {
+	core_message NOTICE "Calculating dependencies"
+	
+	core_variable_array_initialise _libertine_compile_haveCalculatedDependency
+	
 	depends()
 	{
 		local dependentPackage
@@ -566,6 +572,8 @@ libertine_compile_calculateDependencies()
 
 libertine_compile_calculateHashes()
 {
+	core_message NOTICE "Calculating hashes"
+	
 	# The .machine package is special; it does not really exist
 	libertine_hash_computePackageHashForDotMachineSpecialPackage
 	
