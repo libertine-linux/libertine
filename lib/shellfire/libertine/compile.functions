@@ -143,48 +143,18 @@ libertine_compile_buildDependencyIfRequiredAndAddOurselvesToItsListOfReverseDepe
 		printf '' >"$cachedBuiltDependentPackageFolderPath"/.built
 	
 		# Remove ourselves from all reverse dependencies, then add ourselves to a specific one
-						
-			# Remove from all reverse dependencies '*' is for package hashs
+			
+			# Remove from all reverse dependencies; '*' is for package hashes
 			set +f
-				rm -rf "$libertine_packageCacheOutputFolderPath"/"$dependentPackage"/*/reverse-dependencies/"$ourPackage"."$packageHash"
+				rm -rf "$libertine_packageCacheOutputFolderPath"/"$dependentPackage"/*/reverse-dependencies/"$ourPackage"
 			set -f
 			
 			# Make a reverse-dependencies folder
 			mkdir -m 0700 -p "$libertine_packageCacheOutputFolderPath"/"$dependentPackage"/"$dependentPackageHash"/reverse-dependencies
 	
 			# Add ourselves to dependent package's particular hash list of reverse dependencies
-			ln -s ../../../"$ourPackage"/"$packageHash" "$libertine_packageCacheOutputFolderPath"/"$dependentPackage"/"$dependentPackageHash"/reverse-dependencies/"$ourPackage"."$packageHash"
-	
-		# Destroy any built, cached packages no longer referenced by anyone
-		
-			# Remove empty reverse-dependencies folders
-			set +f
-			local reverseDependencyFolderPath
-			for reverseDependencyFolderPath in "$cachedBuiltDependentPackageVariantsFolderPath"/*/reverse-dependencies
-			do
-				set -f
-				if [ -e "$reverseDependencyFilePath" ]; then
-					# Will remove only if empty
-					rmdir "$reverseDependencyFolderPath" 1>/dev/null 2>/dev/null
-				fi
-			done
-			set -f
-		
-			# Remove built package if does not have a reverse-dependencies folder
-			set +f
-			local packageVariantFolderPath
-			for packageVariantFolderPath in "$cachedBuiltDependentPackageVariantsFolderPath"/*
-			do
-				set -f
-				if [ -e "$packageVariantFolderPath" ]; then
-				
-					if [ ! -e "$packageVariantFolderPath"/reverse-dependencies ]; then
-						rm -rf "$packageVariantFolderPath"
-					fi
-				fi
-			done
-			set -f
-		
+			ln -s ../../../"$ourPackage"/"$ourPackageHash" "$libertine_packageCacheOutputFolderPath"/"$dependentPackage"/"$dependentPackageHash"/reverse-dependencies/"$ourPackage"
+			
 	# Release package lock
 	_libertine_compile_packageLock_releasePerPackageMutexLock
 }
@@ -391,7 +361,7 @@ libertine_compile_packageLock_compileWhilstLocked()
 	
 		local dependentPackage="${dependentPackageFolderPath##*/}"
 		
-		ln -s "$libertine_public_relativeOutputPath" "$dependenciesFolderPath"/"$dependentPackage"
+		ln -s "$(libertine_public_relativeOutputPath)" "$dependenciesFolderPath"/"$dependentPackage"
 	
 	done
 	set -f
