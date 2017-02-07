@@ -19,9 +19,11 @@ libertine_architecture_setBuild()
 	local _libertine_architecture_cmakeProcessor
 	local _libertine_architecture_unameArchitecture
 	local _libertine_architecture_unameOperatingSystem
+	local _libertine_architecture_unameTimestamp
 	local _libertine_architecture_unameTimestampSecondsSince1970
 	local _libertine_architecture_unameTimestampTouch
-	local _libertine_architecture_unameTimestamp
+	local _libertine_architecture_unameHostName
+	local _libertine_architecture_unameDomainName
 	local _libertine_architecture_forMuslLd
 	local _libertine_architecture_autoconf
 	local _libertine_architecture_shorter
@@ -48,6 +50,8 @@ libertine_architecture_setBuild()
 	libertine_buildUnameTimestamp="$_libertine_architecture_unameTimestamp"
 	libertine_buildUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
 	libertine_buildUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
+	libertine_buildUnameHostName="$_libertine_architecture_unameHostName"
+	libertine_buildUnameDomainName="$_libertine_architecture_unameDomainName"
 	libertine_buildForMuslLd="$_libertine_architecture_forMuslLd"
 	libertine_buildAutoconf="$_libertine_architecture_autoconf"
 	libertine_buildShorter="$_libertine_architecture_shorter"
@@ -76,6 +80,8 @@ libertine_architecture_setHost()
 	local _libertine_architecture_unameTimestamp
 	local _libertine_architecture_unameTimestampSecondsSince1970
 	local _libertine_architecture_unameTimestampTouch
+	local _libertine_architecture_unameHostName
+	local _libertine_architecture_unameDomainName
 	local _libertine_architecture_forMuslLd
 	local _libertine_architecture_autoconf
 	local _libertine_architecture_shorter
@@ -102,6 +108,8 @@ libertine_architecture_setHost()
 	libertine_hostUnameTimestamp="$_libertine_architecture_unameTimestamp"
 	libertine_hostUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
 	libertine_hostUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
+	libertine_hostUnameHostName="$_libertine_architecture_unameHostName"
+	libertine_hostUnameDomainName="$_libertine_architecture_unameDomainName"
 	libertine_hostForMuslLd="$_libertine_architecture_forMuslLd"
 	libertine_hostAutoconf="$_libertine_architecture_autoconf"
 	libertine_hostShorter="$_libertine_architecture_shorter"
@@ -127,6 +135,8 @@ _libertine_architecture_parse()
 	_libertine_architecture_unameTimestamp='Thu Jun 16 09:22:17 UTC 2016'
 	_libertine_architecture_unameTimestampSecondsSince1970='1466068937'
 	_libertine_architecture_unameTimestampTouch='201606160922.17'
+	_libertine_architecture_unameHostName='libertine'
+	_libertine_architecture_unameDomainName='localdomain'
 	
 	case "$architecture" in
 		

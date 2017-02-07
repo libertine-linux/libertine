@@ -80,7 +80,7 @@ _libertine_compile_patchIfPresent()
 			} 2>>"$logFolderPath"/err.log 1>&2
 		
 		popd
-		core_message NOTICE "    Done patching"
+		core_message NOTICE "    Finished patching"
 	fi
 }
 
@@ -387,6 +387,8 @@ libertine_compile_packageLock_compileWhilstLocked()
 		set -e
 		
 		libertine_compile_${package} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
+		
+		core_message INFO "      Finished running build function"
 		
 		libertine_path_installBuildBinariesProvided
 

@@ -1,9 +1,9 @@
 # This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
-
 libertine_path_installBuildBinariesProvided()
 {
+	local count=0
 	pushd "$(libertine_public_buildProvidesPath)"
 
 		set +f
@@ -16,21 +16,47 @@ libertine_path_installBuildBinariesProvided()
 				continue
 			fi
 			
+			if [ $count -eq 0 ]; then
+				core_message INFO "      Providing binaries"
+			fi
+			
+			count=$((count+1))
+			
 			local binaryProvided="${binaryProvidedFolderPath##*/}"
 		
 			local relativeBinaryPath=../build-sysroot/usr/bin/"$binaryProvided"
 				
-			if [ ! -x "$relativeBinaryPath" ]; then
-				core_exitError $core_commandLine_exitCode_UNAVAILABLE "Provided build binary (assumed to be in usr/bin) '$binaryProvided' is not executable at '$(pwd)/$relativeBinaryPath' for package '$package'"
+			if [ ! -f "$relativeBinaryPath" ]; then
+				core_exitError $core_commandLine_exitCode_UNAVAILABLE "          Provided build binary (assumed to be in usr/bin) '$binaryProvided' is not a file at '$(pwd)/$relativeBinaryPath' for package '$package'"
 			fi
+			
+			if [ ! -x "$relativeBinaryPath" ]; then
+				core_exitError $core_commandLine_exitCode_UNAVAILABLE "          Provided build binary (assumed to be in usr/bin) '$binaryProvided' is not executable at '$(pwd)/$relativeBinaryPath' for package '$package'"
+			fi
+			core_message INFO "          Providing binary '$binaryProvided' to build downstream packages"
 		
 			ln -s "$relativeBinaryPath" "$binaryProvided"
-		
 	
 		done
 		set -f
 		
 	popd
+	
+	case $count in
+		
+		0)
+			core_message INFO "      Package does not provide any binaries"
+		;;
+		
+		1)
+			core_message INFO "      Provided 1 binary"
+		;;
+		
+		*)
+			core_message INFO "      Provided $count binaries"
+		;;
+		
+	esac
 }
 
 libertine_path_fakeUname_forBuild()
@@ -38,7 +64,7 @@ libertine_path_fakeUname_forBuild()
 	local shellFilePath="$1"
 	local binFilePath="$2"
 	
-	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_buildUnameArchitecture" "$libertine_buildUnameOperatingSystem" "$libertine_buildUnameTimestamp"
+	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_buildUnameArchitecture" "$libertine_buildUnameOperatingSystem" "$libertine_buildUnameTimestamp" "$libertine_buildUnameHostName"
 }
 
 libertine_path_fakeUname_forHost()
@@ -46,7 +72,7 @@ libertine_path_fakeUname_forHost()
 	local shellFilePath="$1"
 	local binFilePath="$2"
 	
-	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_hostUnameArchitecture" "$libertine_hostUnameOperatingSystem" "$libertine_hostUnameTimestamp"
+	_libertine_path_fakeUname "$shellFilePath" "$binFilePath" "$libertine_hostUnameArchitecture" "$libertine_hostUnameOperatingSystem" "$libertine_hostUnameTimestamp" "$libertine_hostUnameHostName"
 }
 
 core_dependency_requires '*' cat chmod sh
@@ -57,6 +83,7 @@ _libertine_path_fakeUname()
 	local architecture="$3"
 	local operatingSystem="$4"
 	local timestamp="$5"
+	local hostName="$6"
 	
 	local kernelName="$operatingSystem"
 	local osName="$operatingSystem"
@@ -78,6 +105,7 @@ set -e
 set -u
 set -f
 
+hostName='${hostName}'
 architecture='${architecture}'
 kernelName='${kernelName}'
 osName='${osName}'
@@ -156,6 +184,85 @@ EOF
 	chmod +x "$binFilePath"
 }
 
+core_dependency_requires '*' cat chmod sh
+libertine_path_fakeHostname_forBuild()
+{
+	local shellFilePath="$1"
+	local binFilePath="$2"
+	
+	local hostName="$libertine_buildUnameHostName"
+	local domainName="$libertine_buildUnameDomainName"
+	
+	{
+		cat <<EOF
+#!${shellFilePath}
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+set -e
+set -u
+set -f
+
+hostName='${hostName}'
+domainName='${domainName}'
+ipAddress='127.0.0.1'
+EOF
+		cat <<'EOF'
+hostname_main()
+{
+	if [ $# -eq 0 ]; then
+		printf '%s\n' "$hostName"
+		return 0
+	fi
+	
+	case "$1" in
+		
+		-i)
+			printf '%s\n' "$ipAddress"
+		;;
+		
+		-s)
+			printf '%s\n' "$hostName"
+		;;
+		
+		-f)
+			printf '%s\n' "$hostName"."$domainName"
+		;;
+		
+	esac
+}
+
+hostname_main "$@"
+EOF
+	} >"$binFilePath"
+	
+	chmod +x "$binFilePath"
+}
+
+core_dependency_requires '*' cat chmod sh
+libertine_path_fakeDnsdomainname_forBuild()
+{
+	local shellFilePath="$1"
+	local binFilePath="$2"
+	
+	local domainName="$libertine_buildUnameDomainName"
+	
+	cat >"$binFilePath" <<EOF
+#!${shellFilePath}
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+set -e
+set -u
+set -f
+
+printf '%s\n' '$domainName'
+EOF
+	chmod +x "$binFilePath"
+}
+
 libertine_path_essentialBinaries()
 {
 	local callback="$1"
@@ -223,7 +330,6 @@ libertine_path_essentialBinaries()
 	done
 }
 
-
 _libertine_path_exportPATH_findHostBinaryAlternativePath()
 {
 	local binaryNeeded="$1"
@@ -243,7 +349,7 @@ _libertine_path_exportPATH_findHostBinaryAlternativePath()
 		fi
 	done
 	
-	core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH' or an alternative"
+	core_exitError $core_commandLine_exitCode_OSFILE "      Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH' or an alternative"
 }
 
 _libertine_path_exportPATH_findHostBinaryPath()
@@ -266,6 +372,39 @@ _libertine_path_exportPATH_findHostBinaryPath()
 	done
 }
 
+core_dependency_requires '*' cat chmod sh
+_libertine_path_exportPATH_wrapHostBinaryAlternativePathForGrep()
+{
+	local binaryNeeded="$1"
+	local switch="$2"
+	
+	if [ ! -x "$ourPATH"/grep ]; then
+		_libertine_path_exportPATH_findNeededBinary "$ourPATH" 'grep' "$package"
+	fi
+	
+	local shellFilePath="$ourPATH"/sh
+	local grepFilePath="$ourPATH"/grep
+	{
+		cat <<EOF
+#!${shellFilePath}
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+set -e
+set -u
+set -f
+
+grepFilePath='${grepFilePath}'
+switch='${switch}'
+EOF
+	cat <<'EOF'
+exec '${grepFilePath}' '${switch}' "$@"
+EOF
+	} >"$ourPATH"/"$binaryNeeded"
+	chmod +x "$ourPATH"/"$binaryNeeded"
+}
+
 core_dependency_requires '*' ln
 _libertine_path_exportPATH_findNeededBinary()
 {
@@ -273,12 +412,30 @@ _libertine_path_exportPATH_findNeededBinary()
 	local binaryNeeded="$2"
 	local package="$3"
 
-	if [ "$binaryNeeded" = 'uname' ]; then
-		core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
-		libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
-		ln -s fake-uname-build "$ourPATH"/uname
-		return 0
-	fi
+	case "$binaryNeeded" in
+		
+		uname)
+			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
+			ln -s fake-uname-build "$ourPATH"/uname
+			return 0
+		;;
+		
+		hostname)
+			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			libertine_path_fakeHostname_forBuild "$ourPATH"/sh "$ourPATH"/fake-hostname-build
+			ln -s fake-hostname-build "$ourPATH"/hostname
+			return 0
+		;;
+		
+		dnsdomainname)
+			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			libertine_path_fakeDnsdomainname_forBuild "$ourPATH"/sh "$ourPATH"/fake-dnsdomainname-build
+			ln -s fake-dnsdomainname-build "$ourPATH"/dnsdomainname
+			return 0
+		;;
+		
+	esac
 	
 	set +f
 	local dependentPackageFolderPath
@@ -339,8 +496,16 @@ _libertine_path_exportPATH_findNeededBinary()
 			_libertine_path_exportPATH_findHostBinaryAlternativePath sh dash ash bash mksh pdksh ksh88
 		;;
 		
+		egrep)
+			_libertine_path_exportPATH_wrapHostBinaryAlternativePathForGrep egrep -E
+		;;
+		
+		fgrep)
+			_libertine_path_exportPATH_wrapHostBinaryAlternativePathForGrep fgrep -F
+		;;
+		
 		*)
-			core_exitError $core_commandLine_exitCode_OSFILE "Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH'"
+			core_exitError $core_commandLine_exitCode_OSFILE "          Could not find a package that provides, or in the default PATH, the binary '$binaryNeeded' needed to build the package '$package' in PATH '$PATH'"
 		;;
 		
 	esac
