@@ -273,12 +273,13 @@ That's it.
 		* `mv`
 		* `rm`
 		* `sed` (must support flags `-i` and `-e`)
-		* `sha512sum`
+		* `sha256sum`
 		* `stat`
 		* `tr`
 		* `xargs` (must support flags `-r` and `-0`)
 	* As a basic C compiler toolset:-
 		* `cc` (with a preprocessor accessible as `cc -E`, an assembler and a linker)
+		* `c++` (needed to build GCC)
 		* `ar`
 		* `ranlib`
 		* System headers and libraries (we default to either dynamic or static; we do not interrogate the compiler)
@@ -322,7 +323,8 @@ That's it.
 
 * Non-root-logins on the console can be prevented by creating the file `/etc/nologin`; it can be empty. Line feeds in this file are automatically converted to CRLF sequences. This file can be created by a downstream package if desired.
 * Builds are not yet fully reproducible. Some GNU-inspired builds use tools like `id`, `hostname`, `uname` and `date`. The plan is to eventually eliminate these.
-* We actually go as far as intercepting usages of `#!/bin/sh` and the like to try to force code to use our own, known-version, toolchain version of busybox sh, perl, etc. Sadly this isn't perfect.
+* We actually go as far as intercepting usages of `#!/bin/sh` and the like to try to force code to use our own, known-version, toolchain version of busybox sh, perl, etc. Sadly this isn't perfect. So far, `uname` has been eliminated by using a fake that returns data we control.
+* git is not required to build, but package versioning uses git hashes by interrogating `.git` folders. If `.git` folders aren't present, we default to a hash of all the files and folders and their permissions.
 
 #### Getting Going
 
