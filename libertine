@@ -41,12 +41,14 @@ _program()
 			libertine_compile_calculateDependencies
 		
 			libertine_compile_calculateHashes
-		
-			libertine_compile
+			
+			libertine_compile_linuxX
 		
 			libertine_compile_copyOverFinishedBuildProducts
 		
 		_libertine_compile_machineLock_releasePerMachineMutexLock
+	
+		core_message NOTICE "Finished"
 	}
 }
 

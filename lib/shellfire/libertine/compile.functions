@@ -182,8 +182,6 @@ _libertine_compile_machineLock_acquirePerMachineMutexLock()
 {
 	local machine="$1"
 	
-	core_trap_addOnCleanUp _libertine_compile_machineLock_releasePerMachineMutexLock
-	
 	# If SIGTERM happens after mkdir but before assignment of the $machine value to _libertine_compile_machineLock_addLockTrapHandler_machine, then the lock folder may be left locked
 	pushd "$libertine_machineLocksOutputFolderPath"
 		
@@ -243,8 +241,6 @@ core_dependency_requires '*' mkdir sleep
 _libertine_compile_packageLock_acquirePerPackageMutexLock()
 {
 	local package="$1"
-	
-	core_trap_addOnCleanUp _libertine_compile_packageLock_releasePerPackageMutexLock
 	
 	# If SIGTERM happens after mkdir but before assignment of the $package value to _libertine_compile_packageLock_addLockTrapHandler_package, then the lock folder may be left locked
 	pushd "$libertine_packageLocksOutputFolderPath"
@@ -369,7 +365,7 @@ libertine_compile_packageLock_compileWhilstLocked()
 	
 	local logFolderPath="$(libertine_public_outputPath)"
 
-	core_message INFO "      Building package '$package' variant '$variant' (logs in '$logFolderPath')"
+	core_message INFO "      Building package '$package' variant '$variant'"
 
 	# Change environment variable PATH
 	libertine_path_exportPATH
@@ -383,7 +379,7 @@ libertine_compile_packageLock_compileWhilstLocked()
 		_libertine_compile_patchIfPresent "$package"
 		libertine_public_adjustShaBangAllExecutableFilesInPath "$(libertine_public_packagePath)"
 		
-		core_message INFO "      Running build function 'libertine_compile_${package}' for package '${package}'"
+		core_message INFO "      Running build function 'libertine_compile_${package}' for package '${package}' (errors at '$logFolderPath/err.log')"
 		set -e
 		
 		libertine_compile_${package} 1>>"$logFolderPath"/out.log 2>>"$logFolderPath"/err.log
@@ -570,6 +566,8 @@ libertine_compile_calculateDependencies()
 	{
 		:
 	}
+	
+	core_message NOTICE "Finished calculating dependencies"
 }
 
 libertine_compile_calculateHashes()
@@ -580,8 +578,11 @@ libertine_compile_calculateHashes()
 	libertine_hash_computePackageHashForDotMachineSpecialPackage
 	
 	libertine_hash_computePackageHash 'linux'
+	
+	core_message NOTICE "Finished calculating hashes"
 }
 
+core_dependency_requires '*' rm cp
 libertine_compile_copyOverFinishedBuildProducts()
 {
 	local kernelOutputFilePath="$libertine_machineOutputFolderPath"/libertine-linux.vmlinuz
@@ -591,9 +592,7 @@ libertine_compile_copyOverFinishedBuildProducts()
 }
 
 core_dependency_requires '*' rm cp
-libertine_compile()
+libertine_compile_linuxX()
 {
 	libertine_compile_buildDependencyIfRequiredAndAddOurselvesToItsListOfReverseDependencies '.machine' 'linux'
-		
-	_libertine_compile_machineLock_releasePerMachineMutexLock
 }

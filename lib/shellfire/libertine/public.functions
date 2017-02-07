@@ -223,6 +223,77 @@ libertine_public_ccache_PATH()
 	printf '%s' "$(libertine_public_outputPath "$package")"/PATH-ccache
 }
 
+_libertine_public_iterateOverAllPackagesInReverseDependencyOrder_recurse()
+{
+	local parentPackage="$1"
+	local callback="$2"
+	shift 2
+	
+	if core_variable_array_contains visitedDependencies "$parentPackage"; then
+		return 0
+	fi
+	core_variable_array_append visitedDependencies "$parentPackage"
+	
+	set +f
+	local dependentPackageFolderPath
+	for dependentPackageFolderPath in "$libertine_machineCacheOutputFolderPath"/"$package"/depends/*
+	do
+		set -f
+		
+		if [ ! -d "$dependentPackageFolderPath" ]; then
+			continue
+		fi
+		
+		local dependentPackage="${dependentPackageFolderPath##*/}"
+		
+		_libertine_public_iterateOverAllPackagesInReverseDependencyOrder_recurse "$dependentPackage" "$callback" "$@"
+		
+	done
+	set -f
+	
+	$callback "$parentPackage" "$@"
+}
+
+libertine_public_iterateOverAllPackagesInReverseDependencyOrder()
+{
+	local fromPackageInclusive="$1"
+	local callback="$2"
+	shift 2
+	
+	local visitedDependencies
+	local visitedDependencies_initialised
+	core_variable_array_initialise visitedDependencies
+	
+	_libertine_public_iterateOverAllPackagesInReverseDependencyOrder_recurse "$fromPackageInclusive" "$callback" "$@"
+}
+
+libertine_public_iterateOverAllProductionPackagesInReverseDependencyOrder()
+{
+	local fromPackageInclusive="$1"
+	local productionOnlyCallback="$2"
+	shift 2
+	
+	_libertine_public_iterateOverAllProductionPackagesInReverseDependencyOrder_callback()
+	{
+		local package="$1"
+		shift 1
+
+		case "$package" in
+			
+			build_*)
+				:
+			;;
+			
+			*)
+				$productionOnlyCallback "$package" "$@"
+			;;
+			
+		esac
+	}
+	
+	libertine_public_iterateOverAllPackagesInReverseDependencyOrder "$fromPackageInclusive" _libertine_public_iterateOverAllProductionPackagesInReverseDependencyOrder_callback "$@"
+}
+
 core_dependency_requires '*' cp find xargs rm
 libertine_public_copy()
 {
@@ -662,6 +733,23 @@ libertine_public_ccache_createSymlinks()
 	export PATH="$path":"$PATH"
 }
 
+libertine_public_maximumMakeJobs()
+{
+	if core_variable_isUnset cpucount_makeJobs; then
+		cpucount_computeMakeJobsAndLoadAverage 0 75
+	fi
+	local maximumJobs=$((cpucount_makeJobs*2))
+	printf '%s' "$maximumJobs"
+}
+
+libertine_public_maximumMakeLoadAverage()
+{
+	if core_variable_isUnset cpucount_makeLoadAverage; then
+		cpucount_computeMakeJobsAndLoadAverage 0 75
+	fi
+	printf '%s' "$cpucount_makeLoadAverage"
+}
+
 _libertine_public_make()
 {
 	local makeCommand="$1"
@@ -725,8 +813,7 @@ libertine_public_make()
 		if core_variable_isUnset cpucount_makeJobs; then
 			cpucount_computeMakeJobsAndLoadAverage 0 75
 		fi
-		
-		local maximumJobs=$((cpucount_makeJobs * 2))
+		local maximumJobs="$(libertine_public_maximumMakeJobs)"
 	fi
 	
 	_libertine_public_make "$makeCommand" "$@"

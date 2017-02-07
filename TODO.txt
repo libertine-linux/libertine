@@ -125,7 +125,14 @@
 	- 'boot' via Docker
 	- 'boot' via chroot
 
-7.1 iPXE Chainloading
+7.1 Bootstrapping
+	- ship a statically compiled copy of Landley's toolbox
+		- this provides a known, good baseline for most things apart from gcc & binutils
+		- sadly not yet awk, sha256sum, sh, tr and possibly one or two others
+	- or use BusyBox, eg <https://busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/>
+		- everything apart from gcc & binutils
+
+7.2 iPXE Chainloading
 	* Unflashed, vanilla BIOS with vanilla PXE ROM
 		* Chainload undionly.kpxe which has been custom built and embeds a single HTTPS URL from which we retrieve an iPXE script
 		* Need to be able to customise the HTTPS URL
@@ -155,7 +162,6 @@
 
 8. Security
 
-8.1 Add libressl ssl_helper for wget
 8.2 Encryption of cpio archive files with decryption at boot
 	- Use ecryptfs https://wiki.archlinux.org/index.php/ECryptfs ?
 	- Use the new ext4 encryption ?
@@ -201,21 +207,8 @@
 	- have a list of CVE numbers that are known to be fixed
 	- have a list of suppressed CVE numbers (eg does not apply, fix is broken, etc)
 	- also look at [vFeed](https://github.com/toolswatch/vFeed)
-8.24 Fix up grsecurity hidesym:-
-``` grsecurity/Makefile:-
-ifdef CONFIG_GRKERNSEC_HIDESYM
-extra-y := grsec_hidesym.o
-$(obj)/grsec_hidesym.o:
-	@-chmod -f 500 /boot
-	@-chmod -f 500 /lib/modules
-	@-chmod -f 500 /lib64/modules
-	@-chmod -f 500 /lib32/modules
-	@-chmod -f 700 .
-	@-chmod -f 700 $(objtree)
-	@echo '  grsec: protected kernel image paths'
-endif
+8.24 Integrate our own `cvetool`
 ```
-
 
 9. Misc
 

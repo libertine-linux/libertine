@@ -251,73 +251,68 @@ That's it.
 	* In theory, it should be possible to build on Mac OS X but someone needs to fix GNU binutils `ld` (BFD variant) to compile on it and adjust the latest version of BusyBox
 * A build does not need `make`, `bison`, `flex`, `yacc`, `lex`, `perl`, `autoconf`, `automake`, `m4` or `bash`; we bootstrap these to known versions
 * We try to minimise use of the host's C compiler toolchain, but gcc's insane dependencies makes this hard
-* The build system self-bootstraps most of its dependencies; once GNU make, NetBSD patch, BusyBox and perl are built, it is independent of the host system except for a POSIX shell (`sh`), `/usr/bin/env` and the host system compiler toolchain (which then gets replaced)
-* To build these essentials, the following are necessary:-
-	* To run the code:-
-		* `sh` (POSIX)
-		* `env` as `/usr/bin/env` - the only absolute, hardcoded path used
-	* To use essential shared code from [shellfire](https://github.com/shellfire-dev/core):-
-		* `rm`
-		* `mktemp` (recommended, but can be worked around in extremis if missing)
-		* `ls` (used to check configuration permissions)
-	* In the `public` functions (of these, `sha512sum`, is a little uncommon, but isn't actually used if `git` is present):-
-		* `awk`
-		* `cat`
-		* `chmod`
-		* `cp`
-		* `find`
-		* `git` (to eliminate this we need a faster way of calculating hashes in `_libertine_compile_folderHashValue`)
-		* `grep`
-		* `ln`
-		* `mkdir`
-		* `mv`
-		* `rm`
-		* `sed` (must support flags `-i` and `-e`)
-		* `sha256sum`
-		* `stat`
-		* `tr`
-		* `xargs` (must support flags `-r` and `-0`)
-	* As a basic C compiler toolset:-
-		* `cc` (with a preprocessor accessible as `cc -E`, an assembler and a linker)
-		* `c++` (needed to build GCC)
+* The build system self-bootstraps most of its dependencies, including GNU make and patch; it is independent of the host system except for a POSIX shell (`sh`), `/usr/bin/env`
+* To build a replacement native build toolchain (and the run `libertine`), the following are necessary:-
+	* System Compiler and Binutils
 		* `ar`
-		* `ranlib`
-		* System headers and libraries (we default to either dynamic or static; we do not interrogate the compiler)
-	* To build GNU make:-
-		* Nothing additional is required
-	* To build NetBSD patch (we can not use BusyBox's patch as it's broken, *and* we need a working `patch` to build BusyBox and Musl-Cross-Make)
-		* Nothing additional is required
-	* To build BusyBox:-
-		* `basename`
-		* `bzip2`
-		* `cmp`
-		* `cut`
-		* `dirname`
-		* `echo`
-		* ?`install`?
-		* `od`
-		* `sort`
-		* `tail`
-		* `touch`
-		* `uname`
-		* `uniq`
-		* With some ingenuity, it is probably possible to replace the usages of `tail`, `uniq`, `echo`, `touch`, `dirname`, `basename` and `install` with shell script wrappers
-			* `sort | uniq` can be replaced by `sort -u`
-		* It may be possible to create a replacement for `cmp` using the shell (with `dd` and `od`), too (see [Rich Felkker's sh tricks](http://www.etalabs.net/sh_tricks.html)).
-		* Our version of BusyBox also provides `getconf`, `getent`, `nologin` and `iconv`.
-	* To build perl (needed for autotools cruft):-
-		* `readelf`
-	* To build a new Compiler Toolchain via musl-cross-make, the following are also needed:-
-		* `gcc`
+			* BusyBox `ar` is unlikely to work
 		* `c++`
-		* `g++`
-		* `cpp` (can be replaced by a shell script that calls `gcc -E`)
+		* `cc`
+			* Note that `cc` and `c++` also require a linker, system headers and system libraries
+			* `cc` must also be a preprocessor via the `-E` switch
+			* In practice all modern C compilers (GCC, Clang) support these requirements
 		* `ld`
-		* `as`
-		* `strip` (can be replaced by a do-nothing shell script)
-		* `nm`
-		* `objcopy`
 		* `objdump`
+		* `ranlib`
+		* `readelf`
+	* Grep-Awk-Sed (all capable of being supplied by BusyBox)
+		* `awk`
+		* `grep`
+		* `sed`
+	* Find Utilities (all capable of being supplied by BusyBox)
+		* `find`
+		* `xargs`
+	* POSIX shell (BusyBox ash works)
+		* `sh`
+	* Common utilities (all capable of being supplied by BusyBox)
+		* Very Common
+			* `cat`
+			* `chmod`
+			* `chown`
+			* `cp`
+			* `cut`
+			* `env`
+			* `head`
+			* `id`
+			* `ln`
+			* `ls`
+			* `mkdir`
+			* `mktemp`
+			* `mv`
+			* `rm`
+			* `rmdir`
+			* `sleep`
+			* `stat`
+			* `tail`
+			* `tr`
+		* Very Common but should be done with shell script
+			* `basename`
+			* `dirname`
+			* `echo`
+			* `touch` (only being used to create empty files)
+		* Common
+			* `base64`
+			* `install`
+			* `od`
+			* `sha256sum`
+		* Comparison Utilities
+			* `cmp`
+		* Sort Utilities
+			* `sort`
+			* `uniq`
+		* Not Essential but used if present to avoid corner case bugs by `./libertine`
+			* `realpath` or `readlink`
+* Compilation is known to bootstrap successfully from an Alpine Linux 3.4 x86_64 system
 
 ### Notes
 
