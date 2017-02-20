@@ -3,6 +3,10 @@
 
 
 00_baseline
+
+ReOpenLDAP_server
+ReOpenLDAP_client
+
 file
 curl
 openssh_server

@@ -424,7 +424,6 @@ _libertine_public_populateInputSysroot()
 	
 	local inputSysrootPath="$(libertine_public_inputSysrootPath)"
 	
-	# With rsync, we used to do --exclude=usr/bin --exclude=usr/libexec --exclude=usr/"$host"/bin to make this more efficient
 	libertine_public_copy "$(libertine_public_outputBuildSysrootPath "$muslCrossVariant")"/. "$inputSysrootPath"/
 		
 	local packageX
@@ -442,10 +441,10 @@ _libertine_public_populateInputSysroot()
 	done
 	
 	# Fix-up libtool cruft
-	find "$inputSysrootPath" -type f -name '*.la' | xargs -r sed -i -e "s;^libdir='/;libdir='${inputSysrootPath}/;g"
+	#find "$inputSysrootPath" -type f -name '*.la' | xargs -r sed -i -e "s;^libdir='/;libdir='${inputSysrootPath}/;g"
 	
 	# Fix-up pkg-config cruft
-	find "$inputSysrootPath" -type f -name '*.pc' | xargs -r sed -i -e 's;^prefix=/;prefix='"${inputSysrootPath}"'/;g'
+	find "$inputSysrootPath" -type f -name '*.pc' | xargs -r sed -i -e 's;=/usr;='"${inputSysrootPath}"'/usr;g'
 }
 
 libertine_public_gccAndBinutilsExecutables()

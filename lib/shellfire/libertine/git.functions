@@ -55,12 +55,21 @@ libertine_git_folderGitVersion()
 	
 	local headFilePath="$gitFolderPath"/HEAD
 	
+	if [ ! -e "$headFilePath" ]; then
+		printf ''
+		return 0
+	fi
+	
 	local headOrRef="$(cat "$headFilePath")"
 	case "$headOrRef" in
 		
 		'ref: '*)
 			local refRelativeFilePath="$(awk '$1 ~ /^ref:$/ { print $2 }' "$headFilePath")"
 			local refFilePath="$gitFolderPath"/"$refRelativeFilePath"
+			if [ ! -e "$refFilePath" ]; then
+				printf ''
+				return 0
+			fi
 			local reference="$(cat "$refFilePath")"
 			printf '%s' "$reference"
 		;;

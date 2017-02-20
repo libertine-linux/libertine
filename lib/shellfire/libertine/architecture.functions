@@ -20,6 +20,7 @@ libertine_architecture_setBuild()
 	local _libertine_architecture_unameArchitecture
 	local _libertine_architecture_unameOperatingSystem
 	local _libertine_architecture_unameTimestamp
+	local _libertine_architecture_unameTimestampIso8601
 	local _libertine_architecture_unameTimestampSecondsSince1970
 	local _libertine_architecture_unameTimestampTouch
 	local _libertine_architecture_unameHostName
@@ -48,6 +49,7 @@ libertine_architecture_setBuild()
 	libertine_buildUnameArchitecture="$_libertine_architecture_unameArchitecture"
 	libertine_buildUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
 	libertine_buildUnameTimestamp="$_libertine_architecture_unameTimestamp"
+	libertine_buildUnameTimestampIso8601="$_libertine_architecture_unameTimestampIso8601"
 	libertine_buildUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
 	libertine_buildUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
 	libertine_buildUnameHostName="$_libertine_architecture_unameHostName"
@@ -78,6 +80,7 @@ libertine_architecture_setHost()
 	local _libertine_architecture_unameArchitecture
 	local _libertine_architecture_unameOperatingSystem
 	local _libertine_architecture_unameTimestamp
+	local _libertine_architecture_unameTimestampIso8601
 	local _libertine_architecture_unameTimestampSecondsSince1970
 	local _libertine_architecture_unameTimestampTouch
 	local _libertine_architecture_unameHostName
@@ -106,6 +109,7 @@ libertine_architecture_setHost()
 	libertine_hostUnameArchitecture="$_libertine_architecture_unameArchitecture"
 	libertine_hostUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
 	libertine_hostUnameTimestamp="$_libertine_architecture_unameTimestamp"
+	libertine_hostUnameTimestampIso8601="$_libertine_architecture_unameTimestampIso8601"
 	libertine_hostUnameTimestampSecondsSince1970="$_libertine_architecture_unameTimestampSecondsSince1970"
 	libertine_hostUnameTimestampTouch="$_libertine_architecture_unameTimestampTouch"
 	libertine_hostUnameHostName="$_libertine_architecture_unameHostName"
@@ -133,6 +137,7 @@ _libertine_architecture_parse()
 	_libertine_architecture_operatingSystem='linux'
 	_libertine_architecture_unameOperatingSystem='Linux'
 	_libertine_architecture_unameTimestamp='Thu Jun 16 09:22:17 UTC 2016'
+	_libertine_architecture_unameTimestampIso8601='2016-06-16T09:22:17Z'
 	_libertine_architecture_unameTimestampSecondsSince1970='1466068937'
 	_libertine_architecture_unameTimestampTouch='201606160922.17'
 	_libertine_architecture_unameHostName='libertine'

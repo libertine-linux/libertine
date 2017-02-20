@@ -7,6 +7,7 @@
 -fstack-protector-strong
 -D_FORTIFY_SOURCE=2
 -D_GNU_SOURCE
+-D__gnu_linux__
 -O3
 -fno-asynchronous-unwind-tables
 -fno-unwind-tables
