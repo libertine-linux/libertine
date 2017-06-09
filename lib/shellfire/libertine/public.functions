@@ -236,10 +236,10 @@ _libertine_public_iterateOverAllPackagesInReverseDependencyOrder_recurse()
 	
 	set +f
 	local dependentPackageFolderPath
-	for dependentPackageFolderPath in "$libertine_machineCacheOutputFolderPath"/"$package"/depends/*
+	for dependentPackageFolderPath in "$libertine_machineCacheOutputFolderPath"/"$parentPackage"/depends/*
 	do
 		set -f
-		
+
 		if [ ! -d "$dependentPackageFolderPath" ]; then
 			continue
 		fi
