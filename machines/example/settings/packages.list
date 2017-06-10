@@ -4,7 +4,7 @@
 
 00_baseline
 
-libnuma
+ofed_mellanox
 
 #dpdk_tools
 #ReOpenLDAP_server
