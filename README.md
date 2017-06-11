@@ -53,9 +53,12 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* Kvm / Qemu settings can be managed as part of source control
 	* Empty drives for persistent storage can be created on first boot (see `montebianco/montebianco-qemu`)
 * Extremely Secure
-	* No loadable modules; highly resistant to module-based rootkit attacks
 	* Kernel is built with PaX and grsecurity
 		* With full protections; for instance, the TCP stack always plays dead
+	* No loadable modules; highly resistant to module-based rootkit attacks
+	* No loadable firmware; all necessary firmware is compiled into the Kernel
+		* `CONFIG_EXTRA_FIRMWARE` can be set to the exact set required (eg `CONFIG_EXTRA_FIRMWARE="amd-ucode/microcode_amd_fam15h.bin"`)
+		* We use a git-versioned source of firmware
 	* ~~Persistent storage uses encrypted ZFS~~
 		* ZFS is currently broken for a grsecurity-patched Linux
 	* No package manager
