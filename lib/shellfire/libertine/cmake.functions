@@ -2,9 +2,51 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-core_dependency_requires '*' cat
-libertine_cmake_createToolchainFile()
+libertine_cmake_createToolchainFile_static()
 {
+	case "$package" in
+	
+		build_*)
+			local cCompilerFlags="$(libertine_public_buildCCompilerFlags)"
+			local cxxCompilerFlags="$(libertine_public_buildCxxCompilerFlags)"
+		;;
+		
+		*)
+			local cCompilerFlags="$(libertine_public_hostCCompilerFlags)"
+			local cxxCompilerFlags="$(libertine_public_hostCxxCompilerFlags)"
+		;;
+		
+	esac
+	
+	_libertine_cmake_createToolchainFile true "$cCompilerFlags" "$cxxCompilerFlags"
+}
+
+libertine_cmake_createToolchainFile_dynamic()
+{
+	case "$package" in
+	
+		build_*)
+			local cCompilerFlags="$(libertine_public_buildCCompilerFlags -static --static -Wl,-Bstatic -static-libgcc)"
+			local cxxCompilerFlags="$(libertine_public_buildCxxCompilerFlags -static --static -Wl,-Bstatic -static-libgcc -static-libstdc++)"
+		;;
+		
+		*)
+			local cCompilerFlags="$(libertine_public_hostCCompilerFlags -static --static -Wl,-Bstatic -static-libgcc)"
+			local cxxCompilerFlags="$(libertine_public_hostCxxCompilerFlags -static --static -Wl,-Bstatic -static-libgcc -static-libstdc++)"
+		;;
+		
+	esac
+	
+	_libertine_cmake_createToolchainFile false "$cCompilerFlags" "$cxxCompilerFlags"
+}
+
+core_dependency_requires '*' cat
+_libertine_cmake_createToolchainFile()
+{
+	local isStatic="$1"
+	local cCompilerFlags="$2"
+	local cxxCompilerFlags="$3"
+	
 	# Relies on libertine_cmakeCompilerId and libertine_cmakeCompilerVersion in musl_cross_make/compiler-details
 	
 	case "$package" in
@@ -12,121 +54,77 @@ libertine_cmake_createToolchainFile()
 		build_*)
 			local triple="$libertine_build"
 			local installPrefix="$(libertine_public_outputBuildSysrootPath)"/usr
-			local cCompilerFlags="$(libertine_public_buildCCompilerFlags)"
-			local cxxCompilerFlags="$(libertine_public_buildCxxCompilerFlags)"
 		;;
 		
 		*)
 			local triple="$libertine_host"
 			local installPrefix='/usr'
-			local cCompilerFlags="$(libertine_public_hostCCompilerFlags)"
-			local cxxCompilerFlags="$(libertine_public_hostCxxCompilerFlags)"
 		;;
 		
 	esac
 	
-	local toolchainFilePath=./toolchain.cmake
+	{
+		cat <<-EOF
+			set(CMAKE_INSTALL_PREFIX "${installPrefix}" CACHE PATH "" FORCE)
+			set(CMAKE_STAGING_PREFIX "${installPrefix}" CACHE PATH "" FORCE)
+			set(CMAKE_FIND_ROOT_PATH "$(libertine_public_inputSysrootPath)" CACHE STRING "" FORCE)
+			set(CMAKE_SYSROOT "$(libertine_public_inputSysrootPath)" CACHE STRING "" FORCE)
+		
+			set(CMAKE_C_COMPILER_TARGET "${triple}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_COMPILER_TARGET "${triple}" CACHE STRING "" FORCE)
+			set(CMAKE_AR "${triple}-ar" CACHE FILEPATH "" FORCE)
+			set(CMAKE_RANLIB "${triple}-ranlib" CACHE FILEPATH "" FORCE)
+			set(CMAKE_LINKER "${triple}-cc" CACHE FILEPATH "" FORCE)
+			set(CMAKE_NM "${triple}-nm" CACHE FILEPATH "" FORCE)
+			set(CMAKE_OBJCOPY "${triple}-objcopy" CACHE FILEPATH "" FORCE)
+			set(CMAKE_OBJDUMP "${triple}-objdump" CACHE FILEPATH "" FORCE)
+			set(CMAKE_C_COMPILER "${triple}-cc" CACHE FILEPATH "" FORCE)
+			#set(CMAKE_C_COMPILER_ID "${libertine_cmakeCompilerId}" CACHE STRING "" FORCE)
+			set(CMAKE_C_COMPILER_VERSION "${libertine_cmakeCompilerVersion}" CACHE STRING "" FORCE)
+			set(CMAKE_C_COMPILER_LAUNCHER "ccache" CACHE STRING "" FORCE)
+			set(CMAKE_C_FLAGS "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_C_FLAGS_DEBUG "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_C_FLAGS_MAINTAINER "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_COMPILER "${triple}-c++" CACHE FILEPATH "" FORCE)
+			#set(CMAKE_CXX_COMPILER_ID "${libertine_cmakeCompilerId}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_COMPILER_VERSION "${libertine_cmakeCompilerVersion}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_COMPILER_LAUNCHER "ccache" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_FLAGS "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
+			set(CMAKE_CXX_FLAGS_MAINTAINER "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
+		
+			set(CMAKE_SYSTEM_NAME Linux CACHE STRING "" FORCE)
+			set(CMAKE_SYSTEM_VERSION 1 CACHE STRING "" FORCE)
+			set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER CACHE STRING "" FORCE)
+			set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY CACHE STRING "" FORCE)
+			set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE STRING "" FORCE)
+			set(CMAKE_FIND_NO_INSTALL_PREFIX TRUE CACHE BOOL "" FORCE)
+			set(CMAKE_SKIP_RPATH OFF CACHE BOOL "" FORCE)
+			set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "" FORCE)
+			set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+			set(CMAKE_COLOR_MAKEFILE OFF CACHE BOOL "" FORCE)
+			set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "" FORCE)
+			
+			set(CMAKE_CROSSCOMPILING ON CACHE BOOL "" FORCE)
+		EOF
+		
+		if $isStatic; then
+			cat <<-EOF
+				set(CMAKE_POSITION_INDEPENDENT_CODE false CACHE STRING "" FORCE)
+				set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE STRING "" FORCE)
+				set(CMAKE_LINK_SEARCH_START_STATIC ON CACHE BOOL "" FORCE)
+				set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+				set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" CACHE STRING "" FORCE)	
+			EOF
+		fi
+		
+		if [ "$libertine_cmakeCompilerId" = 'GNU' ]; then
+			printf '%s\n' 'set(CMAKE_COMPILER_IS_GNUCC 1 CACHE BOOL "" FORCE)'
+		fi
+	} >./toolchain.cmake
 	
-	cat >"$toolchainFilePath" <<-EOF
-		set(CMAKE_INSTALL_PREFIX "${installPrefix}" CACHE PATH "" FORCE)
-		set(CMAKE_STAGING_PREFIX "${installPrefix}" CACHE PATH "" FORCE)
-		set(CMAKE_FIND_ROOT_PATH "$(libertine_public_inputSysrootPath)" CACHE STRING "" FORCE)
-		set(CMAKE_SYSROOT "$(libertine_public_inputSysrootPath)" CACHE STRING "" FORCE)
-		
-		set(CMAKE_C_COMPILER_TARGET "${triple}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_COMPILER_TARGET "${triple}" CACHE STRING "" FORCE)
-		set(CMAKE_AR "${triple}-ar" CACHE FILEPATH "" FORCE)
-		set(CMAKE_RANLIB "${triple}-ranlib" CACHE FILEPATH "" FORCE)
-		set(CMAKE_LINKER "${triple}-cc" CACHE FILEPATH "" FORCE)
-		set(CMAKE_NM "${triple}-nm" CACHE FILEPATH "" FORCE)
-		set(CMAKE_OBJCOPY "${triple}-objcopy" CACHE FILEPATH "" FORCE)
-		set(CMAKE_OBJDUMP "${triple}-objdump" CACHE FILEPATH "" FORCE)
-		set(CMAKE_C_COMPILER "${triple}-cc" CACHE FILEPATH "" FORCE)
-		#set(CMAKE_C_COMPILER_ID "${libertine_cmakeCompilerId}" CACHE STRING "" FORCE)
-		set(CMAKE_C_COMPILER_VERSION "${libertine_cmakeCompilerVersion}" CACHE STRING "" FORCE)
-		set(CMAKE_C_COMPILER_LAUNCHER "ccache" CACHE STRING "" FORCE)
-		set(CMAKE_C_FLAGS "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_C_FLAGS_DEBUG "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_C_FLAGS_MAINTAINER "-DNDEBUG ${cCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_COMPILER "${triple}-c++" CACHE FILEPATH "" FORCE)
-		#set(CMAKE_CXX_COMPILER_ID "${libertine_cmakeCompilerId}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_COMPILER_VERSION "${libertine_cmakeCompilerVersion}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_COMPILER_LAUNCHER "ccache" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_FLAGS "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
-		set(CMAKE_CXX_FLAGS_MAINTAINER "-DNDEBUG ${cxxCompilerFlags}" CACHE STRING "" FORCE)
-		
-		set(CMAKE_SYSTEM_NAME Linux CACHE STRING "" FORCE)
-		set(CMAKE_SYSTEM_VERSION 1 CACHE STRING "" FORCE)
-		set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER CACHE STRING "" FORCE)
-		set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY CACHE STRING "" FORCE)
-		set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY CACHE STRING "" FORCE)
-		set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-		set(CMAKE_FIND_NO_INSTALL_PREFIX TRUE CACHE BOOL "" FORCE)
-		set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" CACHE STRING "" FORCE)
-		set(CMAKE_LINK_SEARCH_START_STATIC ON CACHE BOOL "" FORCE)
-		set(CMAKE_SKIP_RPATH OFF CACHE BOOL "" FORCE)
-		set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE STRING "" FORCE)
-		set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "" FORCE)
-		set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
-		
-		set(CMAKE_POSITION_INDEPENDENT_CODE false CACHE STRING "" FORCE)
-		
-		set(CMAKE_COLOR_MAKEFILE OFF CACHE BOOL "" FORCE)
-		set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "" FORCE)
-	EOF
-	
-	if [ "$libertine_cmakeCompilerId" = 'GNU' ]; then
-		printf '%s\n' 'set(CMAKE_COMPILER_IS_GNUCC 1 CACHE BOOL "" FORCE)' >>"$toolchainFilePath"
-	fi
 }
-
-# //Have function bcopy
-# HAVE_BCOPY:INTERNAL=1
-# //Result of TRY_COMPILE
-# HAVE_CMAKE_SIZEOF_UNSIGNED_SHORT:INTERNAL=TRUE
-# //Have include dlfcn.h
-# HAVE_DLFCN_H:INTERNAL=1
-# //Have include fcntl.h
-# HAVE_FCNTL_H:INTERNAL=1
-# //Have function getpagesize
-# HAVE_GETPAGESIZE:INTERNAL=1
-# //Have include inttypes.h
-# HAVE_INTTYPES_H:INTERNAL=1
-# //Have symbol memmove
-# HAVE_MEMMOVE:INTERNAL=1
-# //Have include memory.h
-# HAVE_MEMORY_H:INTERNAL=1
-# //Have function mmap
-# HAVE_MMAP:INTERNAL=1
-# //Have include stddef.h
-# HAVE_STDDEF_H:INTERNAL=1
-# //Have include stdint.h
-# HAVE_STDINT_H:INTERNAL=1
-# //Have include stdlib.h
-# HAVE_STDLIB_H:INTERNAL=1
-# //Have include strings.h
-# HAVE_STRINGS_H:INTERNAL=1
-# //Have include string.h
-# HAVE_STRING_H:INTERNAL=1
-# //Have include sys/stat.h
-# HAVE_SYS_STAT_H:INTERNAL=1
-# //Have include sys/types.h
-# HAVE_SYS_TYPES_H:INTERNAL=1
-# //Have include unistd.h
-# HAVE_UNISTD_H:INTERNAL=1
-# //Result of TRY_COMPILE
-# HAVE_WORDS_BIGENDIAN:INTERNAL=TRUE
-# //Have symbol off_t
-# OFF_T:INTERNAL=
-# //Have symbol size_t
-# SIZE_T:INTERNAL=
-# //Have include stdlib.h;stdarg.h;string.h;float.h
-# STDC_HEADERS:INTERNAL=1
-# //Result of TEST_BIG_ENDIAN
-# WORDS_BIGENDIAN:INTERNAL=0
-#

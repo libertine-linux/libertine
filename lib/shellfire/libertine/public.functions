@@ -1134,16 +1134,29 @@ libertine_public_cmake_prepare()
 	printf '# Empty Cache\n\n' >"$(_libertine_public_cmake_cacheFilePath)"
 }
 
+libertine_public_cmake_static()
+{
+	_libertine_public_cmake libertine_cmake_createToolchainFile_static "$@"
+}
+
+libertine_public_cmake_dynamic()
+{
+	_libertine_public_cmake libertine_cmake_createToolchainFile_dynamic "$@"
+}
+
 core_dependency_requires '*' rm mkdir
-libertine_public_cmake()
+_libertine_public_cmake()
 {	
+	local cmakeFileMaker="$1"
+	shift 1
+
 	local buildFolderName='.libertine-cmake-build'
 	rm -rf "$buildFolderName"
 	mkdir -m 0700 -p "$buildFolderName"
 	
 	pushd "$buildFolderName"
 
-		libertine_cmake_createToolchainFile
+		"$cmakeFileMaker"
 		
 		cmake \
 			--trace --debug-trycompile \
