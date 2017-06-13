@@ -14,6 +14,7 @@ libertine_architecture_setBuild()
 	local architecture="$1"
 
 	local _libertine_architecture_target
+	local _libertine_architecture_rustTriple
 	local _libertine_architecture_llvm
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
@@ -44,6 +45,7 @@ libertine_architecture_setBuild()
 	
 	libertine_buildOperatingSystem="$_libertine_architecture_operatingSystem"
 	libertine_build="$_libertine_architecture_target"
+	libertine_buildRustTargetTriple="$_libertine_architecture_rustTriple"
 	libertine_buildLlvm="$_libertine_architecture_llvm"
 	libertine_buildLinux="$_libertine_architecture_linux"
 	libertine_buildLinuxSpecific="$_libertine_architecture_linuxSpecific"
@@ -76,6 +78,7 @@ libertine_architecture_setHost()
 	local architecture="$1"
 
 	local _libertine_architecture_target
+	local _libertine_architecture_rustTriple
 	local _libertine_architecture_llvm
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
@@ -106,6 +109,7 @@ libertine_architecture_setHost()
 	
 	libertine_hostOperatingSystem="$_libertine_architecture_operatingSystem"
 	libertine_host="$_libertine_architecture_target"
+	libertine_hostRustTargetTriple="$_libertine_architecture_rustTriple"
 	libertine_hostLlvm="$_libertine_architecture_llvm"
 	libertine_hostLinux="$_libertine_architecture_linux"
 	libertine_hostLinuxSpecific="$_libertine_architecture_linuxSpecific"
@@ -156,6 +160,7 @@ _libertine_architecture_parse()
 				_libertine_architecture_target='x86_64-linux-musl'
 			fi
 			
+			_libertine_architecture_rustTriple='x86_64-unknown-linux-musl'
 			_libertine_architecture_llvm='X86'
 			_libertine_architecture_linux='x86'
 			_libertine_architecture_linuxSpecific='x86_64'
@@ -185,6 +190,7 @@ _libertine_architecture_parse()
 				_libertine_architecture_target='arm-linux-musleabihf'
 			fi
 			
+			_libertine_architecture_rustTriple='armv7-unknown-linux-musl'
 			_libertine_architecture_llvm='ARM'
 			_libertine_architecture_linux='arm'
 			_libertine_architecture_linuxSpecific='arm'
