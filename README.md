@@ -1,6 +1,3 @@
-[](This file is part of libertine. It is subject to the license terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.)
-[](Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.)
-
 # Libertine Linux: Simplicity is Security
 
 ## Why?
@@ -366,6 +363,46 @@ The following unsupported daemons may be supported if a reasonable use case is f
 
 * `tcpsvd`
 * `udpsvd`
+
+
+#### Setting up an Alpine Linux system to host docker
+
+##### As user `root`
+```bash
+apk add sudo
+sed -i -e 's/root ALL=(ALL) ALL/root ALL=(ALL) ALL\nraph ALL=(ALL) ALL/g' /etc/sudoers
+
+apk add docker
+rc-update add docker boot
+rc-service docker start
+
+apk add git
+
+apk add nfs-utils
+cat <<-EOF >/etc/exports
+/home/raph	*(rw,sync,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000)
+EOF
+rc-update add nfs
+rc-service nfs start
+
+adduser raph
+
+exit
+```
+
+##### As user `raph`
+```bash
+mkdir -m 0700 /home/raph/.ssh
+chown raph:raph /home/raph/.ssh
+echo "MY pub key" >/home/raph/.ssh/authorized_keys
+chmod 0400 /home/raph/.ssh/authorized_keys
+chmod 0700 /home/raph/.ssh
+mkdir libertine-linux
+cd libertine-linux
+git clone https://github.com/libertine-linux/libertine.git
+cd libertine
+git submodule update --init --recursive
+```
 
 
 ## License
