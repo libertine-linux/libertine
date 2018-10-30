@@ -74,10 +74,44 @@ _program_path_find()
 	fi
 }
 
-montebianco_docker_libertine_main()
+docker_build()
 {
-	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
-	exec montebianco/montebianco-docker alpine-build ./libertine "$@"
+	local imageId
+	docker images --all --format '{{.Repository}}_{{.Tag}}\t{{.ID}}' | awk '$1 ~ /^<none>_'"$dockerName"'<none>$/ {print $2}' | while IFS= read -r imageId
+	do
+		docker rmi "$imageId"
+	done
+	
+	#  --volume "$(pwd)":/home/rust/build
+	
+	cd "$dockerBuildFolderPath" 1>/dev/null 2>/dev/null
+
+		docker build --force-rm --rm --tag "$dockerName" "$dockerBuildFolderPath"
+		
+	cd - 1>/dev/null 2>/dev/null
 }
 
-montebianco_docker_libertine_main "$@"
+build_dockerRun()
+{
+	cd "$dockerBuildFolderPath"/home/rust/packages/"$packageName" 1>/dev/null 2>/dev/null
+		
+		docker run --rm --tty --volume "$(pwd)":/root/libertine:cached --interactive "$dockerName" "$@"
+		
+	cd - 1>/dev/null 2>/dev/null	
+}
+
+docker_libertine_main()
+{
+	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
+	
+	
+	local dockerName='libertine-build-environment'
+	local dockerFolderPath="$_program_path"/dockers
+	local dockerBuildFolderPath="$dockerFolderPath"/"$dockerName"
+	
+	docker_build
+	
+	build_dockerRun "$@"
+}
+
+docker_libertine_main "$@"

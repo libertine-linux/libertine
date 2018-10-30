@@ -1,0 +1,197 @@
+# This file is part of montebianco. It is subject to the license terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/montebianco/master/COPYRIGHT. No part of montebianco, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of montebianco. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/montebianco/master/COPYRIGHT.
+
+
+FROM alpine:3.8
+MAINTAINER Raphael Cohn <raphael.cohn@stormmq.com>
+
+
+
+# (1) Arguments
+
+# (1.1) Version arguments
+ARG VERSION_ALPINE_LINUX=3.8
+ARG RUST_APORTS_VERSION=1.17.0-r2
+ARG CARGO_APORTS_VERSION=0.18.0-r0
+ARG VERSION_RUSTUP=1.4.0
+
+# (1.2) Arguments for download locations
+ARG URL_BASE_ALPINE_LINUX=http://dl-cdn.alpinelinux.org/alpine
+ARG URL_GIT_RUSTUP=https://github.com/rust-lang-nursery/rustup.rs.git
+
+# (1.3) Arguments that aren't intended to be overridden, but used in preference to ENV settings (which persist)
+ARG USER=montebianco
+ARG GROUP=$USER
+ARG HOME=/home/$USER
+ARG APORTS_FOLDER_PATH="$HOME"/aports
+ARG APORTS_COMMUNITY_FOLDER_PATH="$APORTS_FOLDER_PATH"/community
+ARG PACKAGES_FOLDER_PATH="$HOME"/packages
+ARG PACKAGES_COMMUNITY_FOLDER_PATH="$PACKAGES_FOLDER_PATH"/community/x86_64
+ARG SOURCES_FOLDER_PATH="$HOME"/third-party-source-packages
+
+
+
+# (2) Baseline environment
+
+# (2.1) Ensure PATH is consistent and contains /usr/local/sbin
+WORKDIR /
+RUN /bin/mkdir -m 0755 -p /usr/local/sbin
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# (2.2) Bring apk package manager up-to-date with known repositories
+RUN printf '%s\n%s\n%s\n' "$URL_BASE_ALPINE_LINUX"/v${VERSION_ALPINE_LINUX}/main "$URL_BASE_ALPINE_LINUX"/v${VERSION_ALPINE_LINUX}/community >/etc/apk/repositories
+RUN apk update
+RUN apk upgrade
+
+# (2.3) Add Certificate Authorities (curl, rustup-init, rustup and cargo use these)
+RUN apk add ca-certificates
+
+
+
+# (3) Make a regular user
+RUN mkdir -m 0755 -p /home
+RUN mkdir -m 0700 "$HOME"
+RUN addgroup -g 1000 "$GROUP"
+RUN adduser -u 1000 -G "$GROUP" -D -h "$GROUP" -s /bin/sh "$USER"
+COPY home/"$USER" /home/"$USER"/
+RUN chown -R "$USER:$GROUP" "$HOME"
+WORKDIR $HOME
+
+
+
+# (4) Make a place to put source code for third party sources
+USER "$USER"
+RUN mkdir -m 0700 -p "$SOURCES_FOLDER_PATH"
+USER root
+
+
+
+
+# (5) Attempt to build rust
+
+# (5.1) Prepare Alpine Linux SDK (as root)
+RUN apk add alpine-sdk
+RUN rm -rf /var/cache/distfiles
+RUN mkdir -p /var/cache/distfiles
+RUN chgrp abuild /var/cache/distfiles
+RUN chmod g+w /var/cache/distfiles
+RUN addgroup "$USER" abuild
+
+# (5.2) Prepare Alpine Linux SDK (as build user)
+WORKDIR "$HOME"
+USER "$USER"
+RUN abuild-keygen -n -a -q -i
+
+# (5.4) Build & Install
+WORKDIR "$APORTS_COMMUNITY_FOLDER_PATH"
+
+# (5.4.1) Build rustc
+WORKDIR "$APORTS_COMMUNITY_FOLDER_PATH"/rust-nightly
+RUN mkdir -m 0700 -p "$APORTS_COMMUNITY_FOLDER_PATH"/rust-nightly/package
+RUN abuild -r -k -i -p "$APORTS_COMMUNITY_FOLDER_PATH"/rust-nightly/package || true
+
+# (5.4.2) Install rustc (needed to build cargo)
+USER root
+RUN apk add --allow-untrusted "$PACKAGES_COMMUNITY_FOLDER_PATH"/rust-nightly-stdlib-"$RUST_APORTS_VERSION".apk
+RUN apk add --allow-untrusted "$PACKAGES_COMMUNITY_FOLDER_PATH"/rust-nightly-"$RUST_APORTS_VERSION".apk
+USER "$USER"
+
+# (5.4.3) Build cargo
+WORKDIR "$APORTS_COMMUNITY_FOLDER_PATH"/cargo-nightly
+RUN mkdir -m 0700 -p "$APORTS_COMMUNITY_FOLDER_PATH"/cargo-nightly/package
+RUN abuild -r -k -i -p "$APORTS_COMMUNITY_FOLDER_PATH"/cargo-nightly/package || true
+
+# (5.4.4) Install cargo
+USER root
+RUN apk add --allow-untrusted "$PACKAGES_COMMUNITY_FOLDER_PATH"/cargo-nightly-"$CARGO_APORTS_VERSION".apk
+USER "$USER"
+
+# (5.5) Remove unwanted folders
+WORKDIR "$HOME"
+RUN rm -rf "$PACKAGES_FOLDER_PATH"
+RUN rm -rf "$APORTS_FOLDER_PATH"
+
+# (5.6) Remove Alpine Linux SDK (as user)
+WORKDIR "$HOME"
+RUN rm -rf "$HOME"/.abuild
+
+# (5.7) Remove Alpine Linux SDK (as root)
+WORKDIR "$HOME"
+USER root
+RUN rm -rf /var/cache/distfiles
+RUN delgroup "$USER" abuild
+RUN apk del alpine-sdk
+USER "$USER"
+
+
+
+# (6) Build rustup
+
+# (6.1) Prepare a development environment
+USER root
+RUN apk add binutils gcc g++ libc-dev fortify-headers gmp-dev mpc1-dev mpfr-dev git file make openssl-dev curl-dev
+USER "$USER"
+WORKDIR "$SOURCES_FOLDER_PATH"
+RUN git clone "$URL_GIT_RUSTUP" rustup
+WORKDIR "$SOURCES_FOLDER_PATH"/rustup
+RUN git checkout "$VERSION_RUSTUP"
+
+# (6.2) Build
+RUN cargo fetch
+RUN LIBZ_SYS_STATIC=1 cargo build --verbose --release --features no-self-update
+
+# (6.3) Install
+USER root
+RUN apk add openssl
+RUN chown 0:0 target/release/rustup-init
+RUN mv target/release/rustup-init /usr/bin/rustup
+USER "$USER"
+RUN mkdir -m 0700 -p "$HOME"/.rustup
+RUN mkdir -m 0700 -p "$HOME"/.rustup/downloads
+RUN mkdir -m 0700 -p "$HOME"/.rustup/tmp
+RUN mkdir -m 0700 -p "$HOME"/.rustup/toolchains
+RUN mkdir -m 0700 -p "$HOME"/.rustup/update-hashes
+# "$HOME"/.rustup/settings.toml
+
+# (6.4) Clean up
+WORKDIR "$HOME"/packages
+RUN rm -rf rustup
+USER root
+RUN apk del binutils gcc g++ libc-dev fortify-headers gmp-dev mpc1-dev mpfr-dev git file make openssl-dev curl-dev
+WORKDIR "$HOME"
+RUN rm -rf packages
+USER "$USER"
+
+
+
+# (7) Install standard musl toolchain
+#WORKDIR /usr/lib/rustlib/x86_64-alpine-linux-musl/lib
+#RUN wget https://static.rust-lang.org/dist/2017-06-16/rust-std-nightly-x86_64-unknown-linux-musl.tar.gz
+#RUN tar -xvf rust-std-nightly-x86_64-unknown-linux-musl.tar.gz
+#RUN ls -la /usr/lib/rustlib/x86_64-alpine-linux-musl
+#RUN ls -la
+RUN rustup set default-host x86_64-alpine-linux-musl
+RUN rustup toolchain link x86_64-alpine-linux-musl /usr
+RUN rustup default x86_64-alpine-linux-musl
+RUN rustup target add x86_64-unknown-linux-musl
+RUN rustup target list
+RUN xxxxxxxxxx
+
+
+
+# (8) Prepare a development environment for Libertine Linux
+# gmp-dev mpc1-dev mpfr-dev are needed to allow GCC plugins to compile (eg those used by grsecurity)
+# libc-dev is the musl headers + sys/*.h extra headers for compatibility
+USER root
+RUN apk add binutils gcc g++ libc-dev fortify-headers gmp-dev mpc1-dev mpfr-dev git
+USER "$USER"
+
+
+
+# (9) Finish
+USER root
+RUN rm -rf /var/cache/apk/*
+USER "$USER"
+RUN rm -rf "$SOURCES_FOLDER_PATH"
+RUN rm -rf "$HOME"/.cargo
+WORKDIR "$HOME"/packages/montebianco
