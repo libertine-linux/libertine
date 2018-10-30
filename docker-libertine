@@ -10,10 +10,7 @@ set -f
 
 _program_path_find()
 {
-	if [ "${_program_fattening_program_path+set}" = 'set' ]; then
-		printf '%s\n' "$_program_fattening_program_path"
-
-	elif [ "${0%/*}" = "$0" ]; then
+	if [ "${0%/*}" = "$0" ]; then
 
 		# We've been invoked by the interpreter as, say, bash program
 		if [ -r "$0" ]; then
@@ -82,8 +79,6 @@ docker_build()
 		docker rmi "$imageId"
 	done
 	
-	#  --volume "$(pwd)":/home/rust/build
-	
 	cd "$dockerBuildFolderPath" 1>/dev/null 2>/dev/null
 
 		docker build --force-rm --rm --tag "$dockerName" "$dockerBuildFolderPath"
@@ -93,9 +88,10 @@ docker_build()
 
 build_dockerRun()
 {
-	cd "$dockerBuildFolderPath"/home/rust/packages/"$packageName" 1>/dev/null 2>/dev/null
+	cd "$dockerBuildFolderPath" 1>/dev/null 2>/dev/null
 		
-		docker run --rm --tty --volume "$(pwd)":/root/libertine:cached --interactive "$dockerName" "$@"
+	set -x
+		exec docker run --rm --tty --volume "$(pwd)"/../..:/root/libertine:cached --interactive "$dockerName" "$@"
 		
 	cd - 1>/dev/null 2>/dev/null	
 }
@@ -106,7 +102,7 @@ docker_libertine_main()
 	
 	
 	local dockerName='libertine-build-environment'
-	local dockerFolderPath="$_program_path"/dockers
+	local dockerFolderPath="$(pwd)"/dockers
 	local dockerBuildFolderPath="$dockerFolderPath"/"$dockerName"
 	
 	docker_build
