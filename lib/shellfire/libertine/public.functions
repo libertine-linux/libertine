@@ -1169,7 +1169,7 @@ _libertine_public_cmake()
 	popd
 }
 
-# Make sure you have 'depends build_elfix\nbuild_needs paxctl-ng' and 'depends build_musl_cross_make_host\nbuild_needs "$libertine_host"-strap' to use this
+# Make sure you have 'depends build_elfix\nbuild_needs paxctl-ng' and 'depends build_musl_cross_make_host\nbuild_needs "$libertine_host"-strip' to use this
 core_dependency_requires '*' mkdir cp
 libertine_public_installAndStripBinaryIn()
 {
@@ -1187,7 +1187,7 @@ libertine_public_installAndStripBinaryIn()
 	libertine_public_stripAndSecureBinary "$destinationExecutableFilePath" "$@"
 }
 
-# Make sure you have 'depends build_paxctl\nbuild_needs paxctl' and 'depends build_musl_cross_make_host\nbuild_needs "$libertine_host"-strap' to use this
+# Make sure you have 'depends build_paxctl\nbuild_needs paxctl' and 'depends build_musl_cross_make_host\nbuild_needs "$libertine_host"-strip' to use this
 libertine_public_stripAndSecureBinary()
 {
 	local binaryFilePath="$1"

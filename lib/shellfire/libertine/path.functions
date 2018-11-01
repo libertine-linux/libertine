@@ -446,11 +446,16 @@ _libertine_path_exportPATH_findNeededBinary()
 	local ourPATH="$1"
 	local binaryNeeded="$2"
 	local package="$3"
-
+	
+	local binariesUsedLogFolderPath="$(libertine_public_outputPath)"/binaries-used.log
+	
 	case "$binaryNeeded" in
 		
 		uname)
 			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			
+			printf "Using fake binary '%s'\n" "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			libertine_path_fakeUname_forBuild "$ourPATH"/sh "$ourPATH"/fake-uname-build
 			ln -s fake-uname-build "$ourPATH"/uname
 			return 0
@@ -458,6 +463,9 @@ _libertine_path_exportPATH_findNeededBinary()
 		
 		hostname)
 			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			
+			printf "Using fake binary '%s'\n" "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			libertine_path_fakeHostname_forBuild "$ourPATH"/sh "$ourPATH"/fake-hostname-build
 			ln -s fake-hostname-build "$ourPATH"/hostname
 			return 0
@@ -465,6 +473,9 @@ _libertine_path_exportPATH_findNeededBinary()
 		
 		dnsdomainname)
 			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			
+			printf "Using fake binary '%s'\n" "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			libertine_path_fakeDnsdomainname_forBuild "$ourPATH"/sh "$ourPATH"/fake-dnsdomainname-build
 			ln -s fake-dnsdomainname-build "$ourPATH"/dnsdomainname
 			return 0
@@ -472,6 +483,9 @@ _libertine_path_exportPATH_findNeededBinary()
 		
 		pkg-config)
 			core_message INFO "          Using fake binary '$binaryNeeded' to build '$package'"
+			
+			printf "Using fake binary '%s'\n" "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			libertine_path_fakePkgConfig_forBuild "$ourPATH"/sh "$ourPATH"/fake-pkg-config-build "$(libertine_public_inputSysrootPath "$package")"
 			ln -s fake-pkg-config-build "$ourPATH"/pkg-config
 			
@@ -501,6 +515,9 @@ _libertine_path_exportPATH_findNeededBinary()
 
 			pushd "$ourPATH"
 				core_message INFO "          Using our  binary '$binaryNeeded' from dependent package '$dependentPackage' to build '$package'"
+			
+				printf "Using our  binary '%s' from dependendent package '%s'\n" "$binaryNeeded" "$dependentPackage" >>"$binariesUsedLogFolderPath"
+			
 				ln -s "$relativePath" "$binaryNeeded"
 			popd
 			
@@ -515,6 +532,9 @@ _libertine_path_exportPATH_findNeededBinary()
 	local hostPath="$(_libertine_path_exportPATH_findHostBinaryPath "$binaryNeeded")"
 	if [ -n "$hostPath" ]; then
 		core_message INFO "          Using host binary '$binaryNeeded' from host PATH at '$hostPath' to build '$package'"
+
+		printf "Using host binary '%s' from host PATH at '%s'\n" "$binaryNeeded" "$hostPath" >>"$binariesUsedLogFolderPath"
+
 		pushd "$ourPATH"
 			ln -s "$hostPath" "$binaryNeeded"
 		popd
@@ -525,26 +545,38 @@ _libertine_path_exportPATH_findNeededBinary()
 	case "$binaryNeeded" in
 		
 		cc)
+			printf "Using one of '%s' from host PATH to provide '%s'\n" 'cc clang gcc' "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_findHostBinaryAlternativePath cc clang gcc
 		;;
 		
 		c++)
+			printf "Using one of '%s' from host PATH to provide '%s'\n" 'c++ clang++ g++' "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_findHostBinaryAlternativePath c++ clang++ g++
 		;;
 	
 		awk)
+			printf "Using one of '%s' from host PATH to provide '%s'\n" 'awk gawk mawk nawk' "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_findHostBinaryAlternativePath awk gawk mawk nawk
 		;;
 	
 		sh)
+			printf "Using one of '%s' from host PATH to provide '%s'\n" 'sh dash ash bash mksh pdksh ksh88' "$binaryNeeded" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_findHostBinaryAlternativePath sh dash ash bash mksh pdksh ksh88
 		;;
 		
 		egrep)
+			printf "Trying to wrap grep -E with shell script or find egrep from host PATH\n" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_wrapHostBinaryAlternativePathForGrep egrep -E
 		;;
 		
 		fgrep)
+			printf "Trying to wrap grep -F with shell script or find fgrep from host PATH\n" >>"$binariesUsedLogFolderPath"
+			
 			_libertine_path_exportPATH_wrapHostBinaryAlternativePathForGrep fgrep -F
 		;;
 		
