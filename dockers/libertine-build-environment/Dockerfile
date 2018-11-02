@@ -10,7 +10,8 @@ MAINTAINER Raphael Cohn <raphael.cohn@stormmq.com>
 
 
 # 1.1 Arguments
-ARG officialRustupBaseUrl=https://static.rust-lang.org/rustup/dist
+# rustup-init version: rustup-init 1.14.0 (1e51b07cc 2018-10-04)
+ARG rustToolchainVersion=2018-10-30
 ARG glibcTag=glibc-2.28
 ARG linuxHeadersVersion=4.4.6-r2
 
@@ -95,6 +96,7 @@ RUN mkdir -p "${glibcInstallPath}"/lib/locale
 
 # 2.2.1.5 Remove build dependencies
 
+RUN rm -rf /root/glibc
 RUN apk del alpine-sdk bison gawk linux-headers
 
 
@@ -107,12 +109,11 @@ ENV PATH="${glibcInstallPath}"/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # 2.2.3 Install, patch and run rustup
 
-RUN apk add curl patchelf
+RUN apk add patchelf
 WORKDIR /root
-RUN curl --location --output rustup-init "$officialRustupBaseUrl"/x86_64-unknown-linux-gnu/rustup-init
-RUN chmod +x rustup-init
+COPY root/rustup-init rustup-init
 RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/lib:/lib rustup-init
-RUN ./rustup-init --verbose -y --no-modify-path --default-toolchain nightly
+RUN ./rustup-init --verbose -y --no-modify-path --default-toolchain nightly-"${rustToolchainVersion}" --default-host x86_64-unknown-linux-gnu
 RUN rm rustup-init
 
 
@@ -128,10 +129,10 @@ RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib 
 RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.cargo/bin/rustdoc
 RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.cargo/bin/rustfmt
 RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.cargo/bin/rustup
-RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/bin/cargo
-RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/bin/rustc
-RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/bin/rustdoc
-RUN apk del curl patchelf
+RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-"${rustToolchainVersion}"-x86_64-unknown-linux-gnu/bin/cargo
+RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-"${rustToolchainVersion}"-x86_64-unknown-linux-gnu/bin/rustc
+RUN patchelf --set-rpath "${glibcInstallPath}"/lib:/usr/local/lib:/usr/lib:/lib /root/.rustup/toolchains/nightly-"${rustToolchainVersion}"-x86_64-unknown-linux-gnu/bin/rustdoc
+RUN apk del patchelf
 
 
 # 2.2.5 Integrate Rust binaries.
@@ -145,6 +146,11 @@ RUN rustc -Vv
 # 2.3 Git for Libertine Linux ./libertine progam
 
 RUN apk add git
+
+
+# 2.4 Qemu for Libertine Linux image testings
+
+RUN apk add qemu-system-x86_64
 
 
 # 3 Clean up apk
