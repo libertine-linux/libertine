@@ -377,6 +377,8 @@ _libertine_path_exportPATH_findHostBinaryAlternativePath()
 		if [ -n "$hostPath" ]; then
 			core_message INFO "          Using alt  binary '$binaryNeeded' alternative '$alternativeBinary' from host PATH at '$hostPath' to build '$package'"
 
+			printf "Using alt  binary '%s' alternative '%s' from host PATH\n" "$binaryNeeded" "$alternativeBinary" >>"$binariesUsedLogFolderPath"
+			
 			pushd "$ourPATH"
 				ln -s "$hostPath" "$binaryNeeded"
 			popd

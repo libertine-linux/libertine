@@ -4,18 +4,16 @@
 
 00_baseline
 
-ofed_mellanox
-
 #dpdk_tools
 #ReOpenLDAP_server
 #ReOpenLDAP_client
 
-#file
-#curl
-#openssh_server
-#openssh_client
-#sudo
-#rsync
+file
+curl
+openssh_server
+openssh_client
+sudo
+rsync
 #dnsmasq
 #busybox_crond
 #busybox_httpd

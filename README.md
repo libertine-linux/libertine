@@ -16,19 +16,18 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 
 	git clone https://github.com/lemonrock/libertine.git
 	cd libertine
-	git submodule update --init --recursive
+	git submodule update --init --recursive --recommend-shallow
 	# Wait a long time
 	
-	# If you have docker, this uses a pristine minimal Alpine Linux to bootstrap
-	montebianco/montebianco-docker alpine-build ./libertine -v 4 --machine example
-	# Wait a long time; takes about 38 minutes on 8-core Mac Pro inside a VM; takes forever if using Mac Docker; doesn't work with dlite (NFS time sync is screwy)
+	# Run inside docker
+	./libertine-docker -v 2
 	
-	# Run your new Libertine Linux 'example' machine in QEMU
-	montebianco/montebianco-qemu --machine example
+	# Test using qemu (requires qemu-system-x86_64 to be present)
+	./test-with-qemu
 	
 	# Now log on to the console with a root password of 'helloworld'; by default root logins by password disabled (as they are for all users)
 
-If you don't want to use docker, you can just run directly with `./libertine -v 4`. This has only been tested on Alpine Linux.
+If you don't want to use docker, you can just run directly with `./libertine -v 2`. This has only been tested on Alpine Linux 3.8.
 
 To see what's going on, take a look at the files in `machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best.
 
@@ -244,9 +243,9 @@ That's it.
 
 ### Building
 
-* A build of Libertine Linux can use Docker on Mac OS X, Windows and Linux; run `montebianco/montebianco-docker alpine-build ./libertine -v 4` in the root of the git repository.
+* A build of Libertine Linux can use Docker on Mac OS X, Windows and Linux.
 * A build of Libertine Linux assumes a minimal Linux-orientated host system:-
-	* To build on Alpine Linux, install the essential tools with `sudo apk add busybox binutils gcc g++ musl-dev`
+	* To build on Alpine Linux, install the essential tools with `sudo apk add alpine-sdk`
 	* On a more traditional Linux system, you'll need `binutils`, `gcc`, `g++`, `libc-dev`, `coreutils`, `findutils`, `sed` (POSIX), `grep` (POSIX) and `awk` (POSIX).
 	* In theory, it should be possible to build on Mac OS X but someone needs to fix GNU binutils `ld` (BFD variant) to compile on it and adjust the latest version of BusyBox
 * A build does not need `make`, `bison`, `flex`, `yacc`, `lex`, `perl`, `autoconf`, `automake`, `m4` or `bash`; we bootstrap these to known versions
@@ -363,46 +362,6 @@ The following unsupported daemons may be supported if a reasonable use case is f
 
 * `tcpsvd`
 * `udpsvd`
-
-
-#### Setting up an Alpine Linux system to host docker
-
-##### As user `root`
-```bash
-apk add sudo
-sed -i -e 's/root ALL=(ALL) ALL/root ALL=(ALL) ALL\nraph ALL=(ALL) ALL/g' /etc/sudoers
-
-apk add docker
-rc-update add docker boot
-rc-service docker start
-
-apk add git
-
-apk add nfs-utils
-cat <<-EOF >/etc/exports
-/home/raph	*(rw,sync,no_subtree_check,insecure,all_squash,anonuid=1000,anongid=1000)
-EOF
-rc-update add nfs
-rc-service nfs start
-
-adduser raph
-
-exit
-```
-
-##### As user `raph`
-```bash
-mkdir -m 0700 /home/raph/.ssh
-chown raph:raph /home/raph/.ssh
-echo "MY pub key" >/home/raph/.ssh/authorized_keys
-chmod 0400 /home/raph/.ssh/authorized_keys
-chmod 0700 /home/raph/.ssh
-mkdir libertine-linux
-cd libertine-linux
-git clone https://github.com/libertine-linux/libertine.git
-cd libertine
-git submodule update --init --recursive
-```
 
 
 ## License
