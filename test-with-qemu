@@ -7,7 +7,7 @@ _program()
 {
 	core_usesIn test_with_qemu qemu
 	core_dependency_requires '*' head uname cat sed
-	libertine_test_with_qemu()
+	test_with_qemu()
 	{
 		pushd "$test_with_qemu_machinesPath"/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
 			local parentFolderPath="$(pwd)"
@@ -20,7 +20,7 @@ _program()
 		local test_with_qemu_cpuOption=''
 		local test_with_qemu_keyboardOption=''
 		. "$qemuFolderPath"/qemu-extra.config
-	
+
 		local TMP_FILE
 		core_temporaryFiles_newFileToRemoveOnExit
 		local configFilePath="$TMP_FILE"
@@ -140,7 +140,7 @@ _program_entrypoint='test_with_qemu'
 _program_commandLine_parseInitialise()
 {
 	_program_default_machine='example'
-	_program_default_machinesPath="$_program_path"/../machines
+	_program_default_machinesPath="$_program_path"/machines
 	_program_default_force=false
 }
 
