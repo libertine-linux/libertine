@@ -90,7 +90,6 @@ build_dockerRun()
 {
 	cd "$dockerBuildFolderPath" 1>/dev/null 2>/dev/null
 		
-	set -x
 		exec docker run --rm --tty --volume "$(pwd)"/../..:/root/libertine:cached --interactive "$dockerName" "$@"
 		
 	cd - 1>/dev/null 2>/dev/null	
