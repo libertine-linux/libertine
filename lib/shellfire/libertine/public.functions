@@ -327,7 +327,7 @@ _libertine_public_copy_filesystem_shadowProtection()
 	local folderPath="${destinationFolderPath}${relativeFolderPath}"
 	if [ -d "$folderPath" ]; then
 		find "$folderPath" -mindepth 1 -type f -print0 | xargs -0 -r -s 1024 chmod 0400
-		chmod 0500 "$folderPath"
+		chmod 0700 "$folderPath"
 	fi
 }
 
