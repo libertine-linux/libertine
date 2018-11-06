@@ -18,6 +18,8 @@ core_dependency_requires '*' mkdir cat cp
 libertine_hash_computePackageHash()
 {
 	local package="$1"
+
+	core_message INFO "    Calculating hash for package '$package'"
 	
 	local hashCalculationFolderPath="$(_libertine_hash_hashCalculationFolderPath "$package")"
 	mkdir -m 0700 -p "$hashCalculationFolderPath"
