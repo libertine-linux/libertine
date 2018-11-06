@@ -1,5 +1,10 @@
 # Libertine Linux: Simplicity is Security
 
+A secure, built-from git-controlled source Linux system that is fully auditable and runs solely from RAM.
+
+Produces ready-to-run images that consist of just one file ready to be booted using grub, pxeboot or QEMU with an embedded copy of all required software inside a read-only init disk.
+
+
 ## Why?
 
 I like the idea of having one system, doing one thing well, that can be stored entirely in source control. That rebuilds as the same system every time from minimal dependencies. And that has zero administration. I want a system I control which version goes where. So that means no package manager arbitarily ----ing things up (eg when homebrew's switch of llvm version from 3.8 to 3.9 wasted me a day). Instead our 'packages' are just folders in git, with submodules for the upstream sources.
@@ -11,6 +16,7 @@ I want a system where I can patch a critical component - say the shell - by just
 I also like simple DevOps, and the ability to make the OS and the software I deploy one and the same. The idea of taking an OS that really is effective for the desktop, and using it for a server, is not sensible; the recent debacle of systemd shows us how confusing that can become. Instead, the right place to look for low maintainance, secure systems is the embedded space and the supercomputing space. Many of the design decisions in Libertine Linux are from my experience of building internet-scale, large deployment clusters and high performance, reliable and robust software over the last twenty years.
 
 Lastly, though, the development of Libertine Linux debunks the mantra that the bazaar is better than the cathedral; it's not. The lack of coherent end-to-end thinking (from computer scientist with a clever algo, to system administrator patching security holes, via kernel and system and application software developers) is why we have complex, brittle and insecure systems today. Too few of us have enough experience or interest to see from one end to the other. And none have the time or finances to count. Too few place value on what they perceive as the little things - consistency, organization and communication - and instead retreat into jargon and flame wars. Until superb programming is equated more with fine art and the best examples of literature, and not historic and strange practices, security and integrity will suffer. I am as guilty as most; just look at some of my descriptions below!
+
 
 ## Quick Start
 
@@ -33,6 +39,7 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 If you don't want to use docker, you can just run directly with `./libertine -v 2`. This has only been tested on Alpine Linux 3.8.
 
 To see what's going on, take a look at the files in `machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best.
+
 
 ## Key Features
 
@@ -230,6 +237,164 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 		* Note that perl and m4 are implicitly used becayse building Linux and anything using Autocruft needs them
 * Real Time Clock (RTC) is always assumed to be UTC. Running a BIOS clock in local time is a great way to create problems.
 
+
+## Creating a new machine
+
+A 'machine' is simply a folder containing files that describe how it is to be configured and what software packages to build for it and how. These files and their permissions are used to create a cryptographic hash; consequently, if the configuration files change, the machine is considered to have changed and can be rebuilt.
+
+The file system layout of these files is as follows:-
+
+```bash
+machines/
+	my_machine_name/
+		.gitignore
+		package-configurations/
+			<files ending .conf or .mkdir>
+			...
+		packages/   (usually a symlink)
+		settings/
+			architecture
+			initramfs.contents
+			packages.list
+			compiler-flags/
+				build-c.compiler-flags
+				build-cxx.compiler-flags
+				host-c.compiler-flags
+				host-cxx.compiler-flags
+			initramfs/
+				<files and folders to copy onto the initial initramfs>
+		qemu/
+			qemu.config
+			qemu-extra.config
+			<any hard disk files ending in .qcow2>
+			libertine-linux.vmlinuz   (usually a symlink)
+```
+
+
+### `.gitignore`
+
+An optional file to ignore anything that should not go in source control, eg private keys stored intside the `initramfs/` folder.
+
+
+### `package-configurations`
+
+A small number of packages can be configured in different ways using one of two kinds of files: `.config` and `.mk`
+
+
+#### `.config` files
+
+These are named as `<package>.config` (where `<package>` is a software package name) and are shell script files which are `source`'d by `<package>` when it is built. They typically contain shell script variables which can be set to different values to control the package output. If a `.config` file is missing, the package's build will use sensible defaults. Since these files are shell script, they can contain empty lines and comments starting with `#`.
+
+
+#### `.mk` files
+
+These are used by a very small number of packages that use a linux-like makefile configuration system. Currently this is restricted to the packages `build_busybox`, `busybox` and `linux_prep` (The name used to separate builds of Linux source code from builds of the Linux kernel with an embedded initramfs disk). By default, these are relatively symlinked to default files supplied by the said packages, but can be overridden by local copies if desired.
+
+
+### `packages`
+
+This is usually a symlink to a git-controlled folder of packages, typically from <https://github.com/libertine-linux/packages>. However, this need not be the case.
+
+
+### `settings`
+
+
+#### `architecture`
+
+This file contains just one line (with no terminal line feed) containing the architecture of the machine being built, eg `x86_64`. At this time no other architectures have been successfully tested, although support for 64-bit ARM (`aarch64`) is desirable.
+
+
+#### `initramfs.contents`
+
+This file is a Linux kernel configuration file that changes the permissions and user and group ids (uid and gid) of files and special files (eg devices) that are present in the initramfs disk. It may contain comments lines starting with `#`. For example:-
+
+```
+file /etc/ssh/ssh_host_ecdsa_key initramfs/etc/ssh/ssh_host_ecdsa_key 0400 0 0
+file /etc/ssh/ssh_host_ed25519_key initramfs/etc/ssh/ssh_host_ed25519_key 0400 0 0
+file /etc/ssh/ssh_host_rsa_key initramfs/etc/ssh/ssh_host_rsa_key 0400 0 0
+file /etc/ssh/sshd_authorized_keys/raph initramfs/etc/ssh/sshd_authorized_keys/raph 0400 0 0
+dir /home/raph 0700 1000 1000
+dir /srv/httpd/myhttpdsite 0500 89 89
+# rcS will change the uid:gid to 89:89 as part of boot
+file /srv/httpd/myhttpdsite/index.html initramfs/srv/httpd/myhttpdsite/index.html 0400 89 89
+```
+
+Individual packets may also generate similar files, and the resultant file given the to the Linux kernel build process is a composite.
+
+
+#### `packages.list`
+
+This is a file listing the software packages (in `packages/`) to build and install. Blank lines are ignored, and lines may be commented by starting them with `#`.
+
+
+#### `compiler-flags/`
+
+This folder contains files used to make performance and other optimizations when compiling using the C and C++ compilers (and, in the future, possibly the Rust compiler).
+
+All of the files here follow the same structure, and have one command line argument per line. For example, a typical file for controlling builds of code that will end up in the final initramfs disk image might be:-
+
+```
+-static
+--static
+-Wl,-Bstatic
+-static-libgcc
+-Werror=implicit-function-declaration
+-Wl,-z,relro,-z,now
+-fstack-protector-strong
+-D_FORTIFY_SOURCE=2
+-D_GNU_SOURCE
+-D__gnu_linux__
+-O3
+-fno-asynchronous-unwind-tables
+-fno-unwind-tables
+-ffunction-sections
+-fdata-sections
+-Wl,--gc-sections
+-fno-common
+-fomit-frame-pointer
+```
+
+Blank lines and comments are not allowed and the final line *must* end with a line feed.
+
+The files used are:-
+
+* `build-c.compiler-flags`: These are flags to be used by the C compiler used when building the initial bootstrap toolchain.
+* `build-cxx.compiler-flags`: There are flags to be used by the C++ compiler used when building the initial bootstrap toolchain.
+* `host-c.compiler-flags`: These are flags to be used by the C compiler when creating binary code to be used in the resultant Libertine Linux initramfs disk image; they should normally contain optimizations.
+* `host-cxx.compiler-flags`: These are flags to be used by the C++ compiler when creating binary code to be used in the resultant Libertine Linux initramfs disk image; they should normally contain optimizations.
+
+
+#### `initramfs/`
+
+These are machine-specfic files to be put into the resultant Linux initramfs disk image. The folder structure inside this folder is preserved as-is, although permissions, user ids and group ids can be overridden using the `initramfs.contents` file. A typical thing to include might be SSH host private keys, machine specific configuration for syslog or sysctl, network interface configuration, static HTTP content to serve and the like. Nothing that requires a writable disk at runtime should be in here.
+
+Content that should not end up in source control (git), eg SSH private keys, should be explicitly ignored using `.gitignore`, or a solution such as `git-crypt` used.
+
+
+### `qemu`
+
+This is an optional folder for testing using QEMU using the `test-under-qemu` program.
+
+
+#### `qemu.config`
+
+This is a standard QEMU INI-style configuration file.
+
+
+#### `qemu-extra.config`
+
+This is `.config` shell script file in the style used for `package-configurations/` that allows customization of the QEMU command line through 3 functions:-
+
+* `test_with_qemu_cpu IvyBridge` sets the CPU to use (in this example, to `IvyBridge`).
+* `test_with_qemu_keyboard en-us` sets the keyboard layout to use (in this example, to `en-us`)
+* `test_with_qemu_drive 0 1G qcow2 lazy_refcounts` adds a drive, number `0`, with capacity `1G` in format `qcow2` with an option of `lazy_refcounts`. This function can be called more than once; it will create drive image files if they do not exist in the `qemu` folder called `drive.<N>.qcow2` where `<N>` is the drive number, eg `0`. It would be good practice to not check these into git and use `.gitignore` (above) to ignore them, eg with `*.qcow2`.
+
+
+### `libertine-linux.vmlinuz`
+
+This should be a symlink to the Libertine Linux kernel image produced by `./libertine`. Typically it would be the value `../../../output/<MACHINE>/libertine-linux.vmlinuz` where `<MACHINE>` is your machine name, eg `my_machine`.
+
+
 ### Use Cases
 
 * Servers
@@ -247,7 +412,7 @@ That's it.
 ### Building
 
 * A build of Libertine Linux can use Docker on Mac OS X, Windows and Linux.
-* A build of Libertine Linux assumes a minimal Linux-orientated host system:-
+* A build of Libertine Linux assumes a minimal Linux-orientated host system, and has only been tested on Alpine Linux 3.6 and 3.8:-
 	* To build on Alpine Linux, install the essential tools with `sudo apk add alpine-sdk`
 	* On a more traditional Linux system, you'll need `binutils`, `gcc`, `g++`, `libc-dev`, `coreutils`, `findutils`, `sed` (POSIX), `grep` (POSIX) and `awk` (POSIX).
 	* In theory, it should be possible to build on Mac OS X but someone needs to fix GNU binutils `ld` (BFD variant) to compile on it and adjust the latest version of BusyBox
@@ -314,7 +479,13 @@ That's it.
 			* `uniq`
 		* Not Essential but used if present to avoid corner case bugs by `./libertine`
 			* `realpath` or `readlink`
-* Compilation is known to bootstrap successfully from an Alpine Linux 3.4 x86_64 system
+
+
+### TODO
+
+* Add support for ext4 encryption using <https://github.com/gdelugre/ext4-crypt> and `e2fsprogs`.
+* Remove grsecurity support and update the kernel, potentially using the CLIP-OS branch
+
 
 ### Notes
 
@@ -324,9 +495,6 @@ That's it.
 * We actually go as far as intercepting usages of `#!/bin/sh` and the like to try to force code to use our own, known-version, toolchain version of busybox sh, perl, etc. Sadly this isn't perfect.
 * git is not required to build, but package versioning uses git hashes by interrogating `.git` folders. If `.git` folders aren't present, we default to a hash of all the files and folders and their permissions.
 
-#### Getting Going
-
-* To check out from git, use `git clone --depth 1 --recursive https://github.com/lemonrock/libertine.git`. We normally do this in the `$HOME` folder.
 
 #### Networkings
 
