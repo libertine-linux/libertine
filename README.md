@@ -16,7 +16,10 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 
 	git clone https://github.com/lemonrock/libertine.git
 	cd libertine
-	git submodule update --init --recursive --recommend-shallow
+	
+	# This script tries to use ssh-keygen to generate RSA and ED25519 keys for the 'example' machine.
+	./run-after-clone
+	
 	# Wait a long time
 	
 	# Run inside docker
