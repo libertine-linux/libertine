@@ -4,60 +4,58 @@
 
 
 _program()
-{
+{	
 	core_usesIn test_with_qemu qemu
-	core_dependency_requires '*' head uname cat sed
+	core_dependency_requires '*' sed qemu-system-x86_64
 	test_with_qemu()
 	{
-		pushd "$test_with_qemu_machinesPath"/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
-			local parentFolderPath="$(pwd)"
-		popd
-	
-		local qemuFolderPath="$parentFolderPath"/qemu
+		local machineFolderPath
+		test_with_qemu_machineFolderPath
 
-		local libertine_architecture="$(head -n 1 "$parentFolderPath"/settings/architecture)"
-	
-		local test_with_qemu_cpuOption=''
-		local test_with_qemu_keyboardOption=''
-		. "$qemuFolderPath"/qemu-extra.config
+		local settingsFolderPath
+		test_with_qemu_settingsFolderPath
+		
+		local qemuSettingsFolderPath
+		test_with_qemu_qemuSettingsFolderPath
 
+		local libertineArchitecture
+		test_with_qemu_libertineArchitecture
+		
+		local SETTINGS_PATH="$qemuSettingsFolderPath"
+		local MACHINE_PATH="$machineFolderPath"
+		local MACHINE_NAME="$test_with_qemu_machine"
+		
+		local qemuDrivesConfigFilePath="$qemuSettingsFolderPath"/qemu-drives.config
+		if [ -s "$qemuDrivesConfigFilePath" ]; then
+			. "$qemuDrivesConfigFilePath"
+		fi
+	
+		set -- -display curses -nodefconfig -no-user-config
+		
 		local TMP_FILE
 		core_temporaryFiles_newFileToRemoveOnExit
-		local configFilePath="$TMP_FILE"
-
-		# Remove stuff from config that doesn't work on Mac OS et al.
+		local commandLineFilePath="$TMP_FILE"
 		{
-			case "$(uname)" in
-		
-				Linux)
-					cat "$qemuFolderPath"/qemu.config
-				;;
-		
-				*)
-					sed '/process =/d' "$qemuFolderPath"/qemu.config
-				;;
-		
-			esac
-		} | sed -e 's;{PATH};'"$qemuFolderPath"';g' >"$configFilePath"
-	
-		#local qemuAppendOptions='loglevel=7'
-		#-append "$qemuAppendOptions"
-	
-		set -- -nodefconfig -readconfig "$configFilePath"
-	
-		if [ -n "$test_with_qemu_cpuOption" ]; then
-			set -- "$@" -cpu "$test_with_qemu_cpuOption"
-		fi
-	
-		if [ -n "$test_with_qemu_keyboardOption" ]; then
-			set -- "$@" -k "$test_with_qemu_keyboardOption"
-		fi
-	
-		# https://qemu.weilnetz.de/doc/qemu-doc.html#pcsys_005fkeys
-	
-		set -- "$@" -display curses
+			printf '%s' 'set -- -nodefconfig -no-user-config '
 			
-		exec qemu-system-"$libertine_architecture" "$@"
+			local qemuDeviceConfigFilePath="$qemuSettingsFolderPath"/qemu.config
+			if [ -s "$qemuDeviceConfigFilePath" ]; then
+				local qemuGeneratedDeviceConfigFilePath
+				test_with_qemu_fillInTemplateConfiguration
+				printf '%s' 'set -- "$@" -readconfig "$qemuGeneratedDeviceConfigFilePath" '
+			fi
+			
+			local qemuCommandLineConfigFilePath="$qemuSettingsFolderPath"/qemu-command-line.config
+			if [ -s "$qemuCommandLineConfigFilePath" ]; then
+				printf ' '
+				sed -e '/^\s*$/d' -e '/^\s*#/d' -e 's/\n/ /g' "$qemuCommandLineConfigFilePath"
+			fi
+			
+			printf '\n'
+			
+			printf '%s' 'exec qemu-system-"$libertineArchitecture" "$@"\n'
+		} >"$commandLineFilePath"
+		. "$TMP_FILE"
 	}
 }
 

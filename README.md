@@ -4,26 +4,17 @@ A secure, built-from git-controlled source Linux system that is fully auditable 
 
 Produces ready-to-run images that consist of just one file ready to be booted using grub, pxeboot or QEMU with an embedded copy of all required software inside a read-only init disk.
 
-
-## Why?
-
-I like the idea of having one system, doing one thing well, that can be stored entirely in source control. That rebuilds as the same system every time from minimal dependencies. And that has zero administration. I want a system I control which version goes where. So that means no package manager arbitarily ----ing things up (eg when homebrew's switch of llvm version from 3.8 to 3.9 wasted me a day). Instead our 'packages' are just folders in git, with submodules for the upstream sources.
-
-I want a system I can just boot and use from RAM via PXE or QEMU / KVM. So I can deploy a large cluster, and upgrade machines by just rebooting or by using `kexec`. Reboot to upgrade means I don't have to think whether that CVE fix to glibc means I have to restart all services or just those services and in what order. If the Linux install is small and simple, this will actually be quicker - and it won't need an admin logging onto boxes. That means having a kernel with a builtin initramfs and command line, so there are no external dependencies.
-
-I want a system where I can patch a critical component - say the shell - by just a fork in git. That means avoiding release tarballs, and taking charge of the GNU 'Build System' auto-guff. Making sure a bug in automake doesn't make a CVE in my OS. It means being able to rebuild the entire OS, and self-bootstrap, from almost nothing. Right now, Libertine Linux works with just a C/C++ system compiler (with associated binutils) and BusyBox. It doesn't even need make, perl or auto-shaft installed. It builds its own toolchain from scratch (including core utils), and so captures all those subtle inputs that the build environment can influence in the output.
-
-I also like simple DevOps, and the ability to make the OS and the software I deploy one and the same. The idea of taking an OS that really is effective for the desktop, and using it for a server, is not sensible; the recent debacle of systemd shows us how confusing that can become. Instead, the right place to look for low maintainance, secure systems is the embedded space and the supercomputing space. Many of the design decisions in Libertine Linux are from my experience of building internet-scale, large deployment clusters and high performance, reliable and robust software over the last twenty years.
-
-Lastly, though, the development of Libertine Linux debunks the mantra that the bazaar is better than the cathedral; it's not. The lack of coherent end-to-end thinking (from computer scientist with a clever algo, to system administrator patching security holes, via kernel and system and application software developers) is why we have complex, brittle and insecure systems today. Too few of us have enough experience or interest to see from one end to the other. And none have the time or finances to count. Too few place value on what they perceive as the little things - consistency, organization and communication - and instead retreat into jargon and flame wars. Until superb programming is equated more with fine art and the best examples of literature, and not historic and strange practices, security and integrity will suffer. I am as guilty as most; just look at some of my descriptions below!
+And, because it bootstraps itself from almost nothing, only a system C and C++ compiler, binutils and BusyBox are all that are needed to get started (although a wrapper script using docker is usually more convenient).
 
 
 ## Quick Start
 
+This builds a full Libertine Linux image for a machine called `example`:-
+
 	git clone https://github.com/lemonrock/libertine.git
 	cd libertine
 	
-	# This script tries to use ssh-keygen to generate RSA and ED25519 keys for the 'example' machine.
+	# This script tries to use ssh-keygen to generate RSA and ED25519 keys for the `example` machine.
 	./run-after-clone
 	
 	# Wait a long time
@@ -31,14 +22,30 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 	# Run inside docker
 	./libertine-docker -v 2
 	
-	# Test using qemu (requires qemu-system-x86_64 to be present)
+	# Output ready-to-run Linux image is in output/machines/example/libertine-linux.vmlinuz
+	
+	# Test using QEMU (requires qemu-system-x86_64 to be present)
 	./test-with-qemu
 	
-	# Now log on to the console with a root password of 'helloworld'; by default root logins by password disabled (as they are for all users)
+	# Now log on to the console with a root password of `helloworld`
 
-If you don't want to use docker, you can just run directly with `./libertine -v 2`. This has only been tested on Alpine Linux 3.8.
+If you don`t want to use docker, you can just run directly with `./libertine -v 2`. This has only been tested on Alpine Linux 3.8.
 
-To see what's going on, take a look at the files in `machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best.
+To see what`s going on, take a look at the files in `machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best. There`s a section below on understanding the configuration files that make up a machine. Machines are just a collection of packages, their configurations and any machine specific files. For example, the salted, hashed root password is stored in the file `machines/example/package-configurations/libertine_filesystem_root_password.config`.
+
+
+## Why?
+
+I like the idea of having one system, doing one thing well, that can be stored entirely in source control. That rebuilds as the same system every time from minimal dependencies. And that has zero administration. I want a system I control which version goes where. So that means no package manager arbitarily ----ing things up (eg when homebrew`s switch of llvm version from 3.8 to 3.9 wasted me a day). Instead our `packages` are just folders in git, with submodules for the upstream sources.
+
+I want a system I can just boot and use from RAM via PXE or QEMU / KVM. So I can deploy a large cluster, and upgrade machines by just rebooting or by using `kexec`. Reboot to upgrade means I don`t have to think whether that CVE fix to glibc means I have to restart all services or just those services and in what order. If the Linux install is small and simple, this will actually be quicker - and it won`t need an admin logging onto boxes. That means having a kernel with a builtin initramfs and command line, so there are no external dependencies.
+
+I want a system where I can patch a critical component - say the shell - by just a fork in git. That means avoiding release tarballs, and taking charge of the GNU `Build System` auto-guff. Making sure a bug in automake doesn`t make a CVE in my OS. It means being able to rebuild the entire OS, and self-bootstrap, from almost nothing. Right now, Libertine Linux works with just a C/C++ system compiler (with associated binutils) and BusyBox. It doesn`t even need make, perl or `auto-shaft` (automake, autoconf, etc) installed. It builds its own toolchain from scratch (including core utils), and so captures all those subtle inputs that the build environment can influence in the output.
+
+I also like simple DevOps, and the ability to make the OS and the software I deploy one and the same. The idea of taking an OS that really is effective for the desktop, and using it for a server, is not sensible; the recent debacle of systemd shows us how confusing that can become. Instead, the right place to look for low maintainance, secure systems is the embedded space and the supercomputing space. Many of the design decisions in Libertine Linux are from my experience of building internet-scale, large deployment clusters and high performance, reliable and robust software over the last twenty years.
+
+Lastly, though, the development of Libertine Linux debunks the mantra that the bazaar is better than the cathedral; it`s not. The lack of coherent end-to-end thinking (from computer scientist with a clever algo, to system administrator patching security holes, via kernel and system and application software developers) is why we have complex, brittle and insecure systems today. Too few of us have enough experience or interest to see from one end to the other. And none have the time or finances to count. Too few place value on what they perceive as the little things - consistency, organization and communication - and instead retreat into jargon and flame wars. Until superb programming is equated more with fine art and the best examples of literature, and not historic and strange practices, security and integrity will suffer. I am as guilty as most; just look at some of my descriptions below!
+
 
 
 ## Key Features
@@ -70,19 +77,19 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* No package manager
 		* No way to install packages at runtime
 	* No unnecessary packages with an extremely small footprint
-		* Lets you audit and understand exactly what's there
+		* Lets you audit and understand exactly what`s there
 		* `.so`, (`lib`), `man`, `info`, headers, etc not installed
 		* Uses busybox over GNU utilities; may switch to Toybox when that is viable in a couple of years
 		* Useless legacy cruft not installed (`su`, floppy disk programs, `chat`, `cal`, `ftp`, `telnet` etc)
 		* Only the desired timezone data (UTC by default) and keyboard maps and console fonts installed
 	* All libraries are statically linked; .so symlink attacks and `LD_PRELOAD` are impossible
-		* With the exception of `nodejs`, which simply doesn't work with common modules in this case (eg `node-sass`)
+		* With the exception of `nodejs`, which simply doesn`t work with common modules in this case (eg `node-sass`)
 		* With the exception of bespoke builds of `luajit`, which need to use `dlopen()`
 	* Compilation uses hardened settingd
 		* Full RELRO (`-Wl,-z,relro,-z,now`)
 		* Uses a strong stack smashing protector (`-fstack-protector-string`)
 		* Uses `_FORTIFY_SOURCE`
-		* Uses Position-Independent-Executables for statically linked binaries, aka 'static PIE'
+		* Uses Position-Independent-Executables for statically linked binaries, aka `static PIE`
 			* ~~Breaks ZFS on Linux (eg `zed`) and OpenSSH~~
 	* Kernel auditing enabled
 		* Used by OpenSSH (which is an optional dependency)
@@ -113,22 +120,22 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 			* ChaCha20 is preferred with AES-GCM a close second
 		* This change leaves ***nodejs vulnerable***, especially as ***npm*** (as it uses an internal ssl library)
 		* Likewise, ***go binaries are probably vulnerable***
-		* ***nodejs*** is very vulnerable, because iy uses it's own built-in openssl with features *only* supported by openssl
+		* ***nodejs*** is very vulnerable, because iy uses it`s own built-in openssl with features *only* supported by openssl
 			* And the attitude of the developers to recitfying this is poor: <https://github.com/nodejs/node/issues/428>
-			* Many of Node JS's CVEs are because of this
-			* Having built node.js, and had many issues with it and related tools, I have come to the conclusion that it's garbage
+			* Many of Node JS`s CVEs are because of this
+			* Having built node.js, and had many issues with it and related tools, I have come to the conclusion that it`s garbage
 			* ***DO NOT USE UNLESS YOU HAVE TO***
 * Custom kernels fully supported
 	* Build only the support in you need for maximum security
 * No systemd
 	* All daemons start at init and stop at shutdown; no need for anything complex whatsoever
-	* All daemons run using source'd shell scripts
-	* Basic PID 1 init supplied by BusyBox's robust, tried-and-tested `init`
-	* No runlevels; they're pointless
+	* All daemons run using source`d shell scripts
+	* Basic PID 1 init supplied by BusyBox`s robust, tried-and-tested `init`
+	* No runlevels; they`re pointless
 	* `inittab` used only for starting and stopping
-* Essential daemons only run in the base build, but there's no need to use them
+* Essential daemons only run in the base build, but there`s no need to use them
 	* Simply define your own base build
-	* Daemons are not even included in the build if they're disabled in busybox's config
+	* Daemons are not even included in the build if they`re disabled in busybox`s config
 * No need for swap, encryption or complex mounts; no switch root or pivot or the like
 * Many Network Features supported out-of-the-box
 	* Uses easy to work with `ifupdown`
@@ -146,15 +153,15 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 	* All files like `/etc/hosts` are created at compile time from snippets in folders like `/etc/hosts.d/*.hosts`
 		* No need to ever edit them
 		* Different packages can contribute different snippets
-		* This allows configuration to be 'built up'
+		* This allows configuration to be `built up`
 		* Same approach is used for `/etc/passwd`, `/etc/group` etc, allowing as much as possible to live in source control as plain text files.
-	* Downstream packages can override any snippet, if you don't like it, just create a file with the same name
+	* Downstream packages can override any snippet, if you don`t like it, just create a file with the same name
 	* The set of snippets to combine are extensible; just have your package drop a `my-package-name.combine` file in `/etc/combine.d`
 	* Current snippeted features in the baseline filesystem (package `libertine_filesystem`) include:-
 		* `/etc/binfmt.d`
 			* used in shell glob sort order
 		* `/etc/combine.d`
-			* used in shell glob sort order to work out what to combine - this is the 'master' list
+			* used in shell glob sort order to work out what to combine - this is the `master` list
 		* `/etc/ethers.d`
 		* `/etc/filesystems.d`
 			* Used by `mount` as an override to /proc/filesystems
@@ -225,7 +232,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 		* `/etc/network/iproute2/rt_realms` (note there is no trailing `.d`)
 * Random entropy is increased at boot time by downloading (over https) from random.org
 	* *Sadly currently not reliable*
-	* We do not use Ubuntu's pollinate service as it is far too Ubuntu-specific
+	* We do not use Ubuntu`s pollinate service as it is far too Ubuntu-specific
 	* We would like to add support for tpm-tools
 	* Where possible, grsecurity is used to increase kernel entropy
 * Language choices and preferences
@@ -240,7 +247,7 @@ To see what's going on, take a look at the files in `machines`. If you copy the 
 
 ## Creating a new machine
 
-A 'machine' is simply a folder containing files that describe how it is to be configured and what software packages to build for it and how. These files and their permissions are used to create a cryptographic hash; consequently, if the configuration files change, the machine is considered to have changed and can be rebuilt.
+A `machine` is simply a folder containing files that describe how it is to be configured and what software packages to build for it and how. These files and their permissions are used to create a cryptographic hash; consequently, if the configuration files change, the machine is considered to have changed and can be rebuilt.
 
 The file system layout of these files is as follows:-
 
@@ -264,10 +271,9 @@ machines/
 			initramfs/
 				<files and folders to copy onto the initial initramfs>
 		qemu/
-			qemu.config
-			qemu-extra.config
-			<any hard disk files ending in .qcow2>
-			libertine-linux.vmlinuz   (usually a symlink)
+			qemu-command-line.config
+			qemu-drives.config
+			qemu-drives.config
 ```
 
 
@@ -283,7 +289,7 @@ A small number of packages can be configured in different ways using one of two 
 
 #### `.config` files
 
-These are named as `<package>.config` (where `<package>` is a software package name) and are shell script files which are `source`'d by `<package>` when it is built. They typically contain shell script variables which can be set to different values to control the package output. If a `.config` file is missing, the package's build will use sensible defaults. Since these files are shell script, they can contain empty lines and comments starting with `#`.
+These are named as `<package>.config` (where `<package>` is a software package name) and are shell script files which are `source``d by `<package>` when it is built. They typically contain shell script variables which can be set to different values to control the package output. If a `.config` file is missing, the package`s build will use sensible defaults. Since these files are shell script, they can contain empty lines and comments starting with `#`.
 
 
 #### `.mk` files
@@ -376,23 +382,42 @@ Content that should not end up in source control (git), eg SSH private keys, sho
 This is an optional folder for testing using QEMU using the `test-under-qemu` program.
 
 
-#### `qemu.config`
+#### `qemu-command-line.config`
 
-This is a standard QEMU INI-style configuration file.
+This file contains QEMU command line switches. These may be on multiple lines. Empty lines and lines consisting entirely of whitespace are ignored. Lines starting with `#` are ignored. The command line switches are concatenated together using spaces before being`eval`'d by the shell.
 
+* The value `${SETTINGS_PATH}` is replaced by the actual absolute path to the machine's QEMU settings (eg `machines/<MACHINE_NAME>/qemu`) folder;
+* The value `${MACHINE_PATH}` is replaced by the actual absolute path to the machine's output (eg `output/machines/<MACHINE_NAME>`) folder;
+* The value `${MACHINE_NAME}` is replaced by the actual machine name.
 
-#### `qemu-extra.config`
-
-This is `.config` shell script file in the style used for `package-configurations/` that allows customization of the QEMU command line through 3 functions:-
-
-* `test_with_qemu_cpu IvyBridge` sets the CPU to use (in this example, to `IvyBridge`).
-* `test_with_qemu_keyboard en-us` sets the keyboard layout to use (in this example, to `en-us`)
-* `test_with_qemu_drive 0 1G qcow2 lazy_refcounts` adds a drive, number `0`, with capacity `1G` in format `qcow2` with an option of `lazy_refcounts`. This function can be called more than once; it will create drive image files if they do not exist in the `qemu` folder called `drive.<N>.qcow2` where `<N>` is the drive number, eg `0`. It would be good practice to not check these into git and use `.gitignore` (above) to ignore them, eg with `*.qcow2`.
+This file does not need to be present.
 
 
-### `libertine-linux.vmlinuz`
+#### `qemu-device.config`
 
-This should be a symlink to the Libertine Linux kernel image produced by `./libertine`. Typically it would be the value `../../../output/<MACHINE>/libertine-linux.vmlinuz` where `<MACHINE>` is your machine name, eg `my_machine`.
+This is a nearly standard QEMU INI-style device configuration file that is pre-preprocessed before being sent to QEMU:-
+
+* The value `${SETTINGS_PATH}` is replaced by the actual absolute path to the machine's QEMU settings (eg `machines/<MACHINE_NAME>/qemu`) folder;
+* The value `${MACHINE_PATH}` is replaced by the actual absolute path to the machine's output (eg `output/machines/<MACHINE_NAME>`) folder;
+* The value `${MACHINE_NAME}` is replaced by the actual machine name;
+* Values unsuitable for Mac OS X are removed.
+
+The QEMU device configuration file format is very poorly documented by QEMU. A good first place to start is to actually read the parse source at <http://git.qemu.org/?p=qemu.git;a=blob;f=util/qemu-config.c> and `grep` for things like `QEMU_OPT_STRING`, `QEMU_OPT_SIZE`, `QEMU_OPT_BOOL` or `QEMU_OPT_NUMBER`. Sadly the use of the configuration is scattered all over the code base.
+
+This file does not need to be present.
+
+
+#### `qemu-drives.config`
+
+This is `.config` shell script file in the style used for `package-configurations/` that allows creation in advance of (disk) drives using a function, `test_with_qemu_drive`. For example `test_with_qemu_drive 0 1G qcow2 lazy_refcounts` adds a drive, number `0`, with capacity `1G` in format `qcow2` with an option of `lazy_refcounts`. This function can be called more than once; it will create drive image files (using `qemu-img`) if they do not exist in the `output/machines/<MACHINE_NAME>` folder called `drive.<N>.qcow2` where `<N>` is the drive number, eg `0`.
+
+* The value `${SETTINGS_PATH}` is replaced by the actual absolute path to the machine's QEMU settings (eg `machines/<MACHINE_NAME>/qemu`) folder;
+* The value `${MACHINE_PATH}` is replaced by the actual absolute path to the machine's output (eg `output/machines/<MACHINE_NAME>`) folder;
+* The value `${MACHINE_NAME}` is replaced by the actual machine name.
+
+This file is `source`'d, and so can contain general POSIX shell script if desired to create additional files prior to execution of QEMU.
+
+This file does not need to be present.
 
 
 ### Use Cases
@@ -406,7 +431,7 @@ This should be a symlink to the Libertine Linux kernel image produced by `./libe
 * Embedded Devices
 * Internet of Things Appliances
 
-That's it.
+That`s it.
 
 
 ### Building
@@ -414,77 +439,84 @@ That's it.
 * A build of Libertine Linux can use Docker on Mac OS X, Windows and Linux.
 * A build of Libertine Linux assumes a minimal Linux-orientated host system, and has only been tested on Alpine Linux 3.6 and 3.8:-
 	* To build on Alpine Linux, install the essential tools with `sudo apk add alpine-sdk`
-	* On a more traditional Linux system, you'll need `binutils`, `gcc`, `g++`, `libc-dev`, `coreutils`, `findutils`, `sed` (POSIX), `grep` (POSIX) and `awk` (POSIX).
+	* On a more traditional Linux system, you`ll need `binutils`, `gcc`, `g++`, `libc-dev`, `coreutils`, `findutils`, `sed` (POSIX), `grep` (POSIX) and `awk` (POSIX).
 	* In theory, it should be possible to build on Mac OS X but someone needs to fix GNU binutils `ld` (BFD variant) to compile on it and adjust the latest version of BusyBox
 * A build does not need `make`, `bison`, `flex`, `yacc`, `lex`, `perl`, `autoconf`, `automake`, `m4` or `bash`; we bootstrap these to known versions
-* We try to minimise use of the host's C compiler toolchain, but gcc's insane dependencies makes this hard
+* We try to minimise use of the host`s C compiler toolchain, but gcc`s insane dependencies makes this hard
 * The build system self-bootstraps most of its dependencies, including GNU make and patch; it is independent of the host system except for a POSIX shell (`sh`), `/usr/bin/env`
-* To build a replacement native build toolchain (and the run `libertine`), the following are necessary:-
-	* System Compiler and Binutils
-		* `ar`
-			* BusyBox `ar` is unlikely to work
-		* `c++`
-		* `cc`
-			* Note that `cc` and `c++` also require a linker, system headers and system libraries
-			* `cc` must also be a preprocessor via the `-E` switch
-			* In practice all modern C compilers (GCC, Clang) support these requirements
-		* `ld`
-		* `objdump`
-		* `ranlib`
-		* `readelf`
-	* Grep-Awk-Sed (all capable of being supplied by BusyBox)
-		* `awk`
-		* `grep`
-		* `sed`
-	* Find Utilities (all capable of being supplied by BusyBox)
-		* `find`
-		* `xargs`
-	* POSIX shell (BusyBox ash works)
-		* `sh`
-	* Common utilities (all capable of being supplied by BusyBox)
-		* Very Common
-			* `cat`
-			* `chmod`
-			* `chown`
-			* `cp`
-			* `cut`
-			* `env`
-			* `head`
-			* `id`
-			* `ln`
-			* `ls`
-			* `mkdir`
-			* `mktemp`
-			* `mv`
-			* `rm`
-			* `rmdir`
-			* `sleep`
-			* `stat`
-			* `tail`
-			* `tr`
-		* Very Common but should be done with shell script
-			* `basename`
-			* `dirname`
-			* `echo`
-			* `touch` (only being used to create empty files)
-		* Common
-			* `base64`
-			* `install`
-			* `od`
-			* `sha256sum`
-		* Comparison Utilities
-			* `cmp`
-		* Sort Utilities
-			* `sort`
-			* `uniq`
-		* Not Essential but used if present to avoid corner case bugs by `./libertine`
-			* `realpath` or `readlink`
+
+
+#### To build a replacement native build toolchain needed before running `./libertine` the following are necessary
+
+In general, a system C and C++ compiler, binutils and BusyBox are all that are needed to produce a native build toolchain.
+
+* System Compiler and Binutils
+	* `ar`
+		* BusyBox `ar` is unlikely to work
+	* `c++`
+	* `cc`
+		* Note that `cc` and `c++` also require a linker, system headers and system libraries
+		* `cc` must also be a preprocessor via the `-E` switch
+		* In practice all modern C compilers (GCC, Clang) support these requirements
+	* `ld`
+	* `objdump`
+	* `ranlib`
+	* `readelf`
+* Grep-Awk-Sed (all capable of being supplied by BusyBox)
+	* `awk`
+	* `grep`
+	* `sed`
+* Find Utilities (all capable of being supplied by BusyBox)
+	* `find`
+	* `xargs`
+* POSIX shell (BusyBox ash works)
+	* `sh`
+* Common utilities (all capable of being supplied by BusyBox)
+	* Very Common
+		* `cat`
+		* `chmod`
+		* `chown`
+		* `cp`
+		* `cut`
+		* `env`
+		* `head`
+		* `id`
+		* `ln`
+		* `ls`
+		* `mkdir`
+		* `mktemp`
+		* `mv`
+		* `rm`
+		* `rmdir`
+		* `sleep`
+		* `stat`
+		* `tail`
+		* `tr`
+	* Very Common but could be done with shell script
+		* `basename`
+		* `dirname`
+		* `echo`
+		* `touch` (only being used to create empty files)
+	* Common
+		* `base64`
+		* `install`
+		* `od`
+		* `sha256sum`
+	* Comparison Utilities
+		* `cmp`
+	* Sort Utilities
+		* `sort`
+		* `uniq`
+	* Not Essential but used if present to avoid corner case bugs by `./libertine`
+		* `realpath` or `readlink`
 
 
 ### TODO
 
 * Add support for ext4 encryption using <https://github.com/gdelugre/ext4-crypt> and `e2fsprogs`.
-* Remove grsecurity support and update the kernel, potentially using the CLIP-OS branch
+* Remove grsecurity support and update the kernel, potentially using the CLIP-OS branch.
+* Creae a docker image from scratch for reproducible building eg `tar -C expanded-initramfs -c . | docker import --message "<machine_name>-hash" - <machine_name>` or `docker load` or `docker create`
+* Add vagrant support
 
 
 ### Notes
@@ -492,8 +524,8 @@ That's it.
 * Non-root-logins on the console can be prevented by creating the file `/etc/nologin`; it can be empty. Line feeds in this file are automatically converted to CRLF sequences. This file can be created by a downstream package if desired.
 * Builds are not yet fully reproducible. Some GNU-inspired builds use tools like `hostname`, `dnsdomainname`, `uname`, `id` and `date`. The plan is to eventually eliminate these.
 	* So far, `hostname`, `dnsdomainname` and `uname` have been eliminated by using a fake that returns data we control.
-* We actually go as far as intercepting usages of `#!/bin/sh` and the like to try to force code to use our own, known-version, toolchain version of busybox sh, perl, etc. Sadly this isn't perfect.
-* git is not required to build, but package versioning uses git hashes by interrogating `.git` folders. If `.git` folders aren't present, we default to a hash of all the files and folders and their permissions.
+* We actually go as far as intercepting usages of `#!/bin/sh` and the like to try to force code to use our own, known-version, toolchain version of busybox sh, perl, etc. Sadly this isn`t perfect.
+* git is not required to build, but package versioning uses git hashes by interrogating `.git` folders. If `.git` folders aren`t present, we default to a hash of all the files and folders and their permissions.
 
 
 #### Networkings
