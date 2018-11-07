@@ -6,7 +6,7 @@
 _program()
 {	
 	core_usesIn test_with_qemu qemu
-	core_dependency_requires '*' sed qemu-system-x86_64
+	core_dependency_requires '*' sed tr qemu-system-x86_64
 	test_with_qemu()
 	{
 		local machineFolderPath
@@ -48,14 +48,15 @@ _program()
 			local qemuCommandLineConfigFilePath="$qemuSettingsFolderPath"/qemu-command-line.config
 			if [ -s "$qemuCommandLineConfigFilePath" ]; then
 				printf ' '
-				sed -e '/^\s*$/d' -e '/^\s*#/d' -e 's/\n/ /g' "$qemuCommandLineConfigFilePath"
+				sed -e '/^\s*$/d' -e '/^\s*#/d' "$qemuCommandLineConfigFilePath" | tr '\n' ' '
 			fi
 			
 			printf '\n'
 			
 			printf '%s' 'exec qemu-system-"$libertineArchitecture" "$@"\n'
 		} >"$commandLineFilePath"
-		. "$TMP_FILE"
+		
+		. "$commandLineFilePath"
 	}
 }
 

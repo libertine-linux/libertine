@@ -33,6 +33,10 @@ test_with_qemu_drive()
 
 test_with_qemu_settingsFolderPath()
 {
+	if [ ! -d "$test_with_qemu_machinesPath"/"$test_with_qemu_machine" ]; then
+		core_exitError 1 "The path $test_with_qemu_machinesPath/$test_with_qemu_machine does not exist"
+	fi
+	
 	pushd "$test_with_qemu_machinesPath"/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
 		settingsFolderPath="$(pwd)"
 	popd
@@ -40,7 +44,11 @@ test_with_qemu_settingsFolderPath()
 
 test_with_qemu_machineFolderPath()
 {
-	pushd "$test_with_qemu_machinesPath"/../output/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
+	if [ ! -d "$test_with_qemu_machinesPath"/../output/machines/"$test_with_qemu_machine" ]; then
+		core_exitError 1 "The path $test_with_qemu_machinesPath/../output/machines/$test_with_qemu_machine does not exist"
+	fi
+	
+	pushd "$test_with_qemu_machinesPath"/../output/machines/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
 		machineFolderPath="$(pwd)"
 	popd
 }
