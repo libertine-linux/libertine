@@ -53,7 +53,7 @@ _program()
 			
 			printf '\n'
 			
-			printf '%s' 'exec qemu-system-"$libertineArchitecture" "$@"\n'
+			printf '%s\n' 'exec qemu-system-"$libertineArchitecture" "$@"'
 		} >"$commandLineFilePath"
 		
 		. "$commandLineFilePath"
