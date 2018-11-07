@@ -29,14 +29,12 @@ _program()
 		if [ -s "$qemuDrivesConfigFilePath" ]; then
 			. "$qemuDrivesConfigFilePath"
 		fi
-	
-		set -- -display curses -nodefconfig -no-user-config
 		
 		local TMP_FILE
 		core_temporaryFiles_newFileToRemoveOnExit
 		local commandLineFilePath="$TMP_FILE"
 		{
-			printf '%s' 'set -- -nodefconfig -no-user-config '
+			printf '%s' 'set -- -no-user-config '
 			
 			local qemuDeviceConfigFilePath="$qemuSettingsFolderPath"/qemu.config
 			if [ -s "$qemuDeviceConfigFilePath" ]; then

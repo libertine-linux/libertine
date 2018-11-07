@@ -589,6 +589,9 @@ libertine_compile_copyOverFinishedBuildProducts()
 	core_message NOTICE "Installing linux kernel to '$kernelOutputFilePath'"
 	rm -rf "$kernelOutputFilePath"
 	cp "$(libertine_public_outputMiscPath linux)"/vmlinuz "$kernelOutputFilePath"
+
+	local initramfsOutputFilePath="$libertine_machineOutputFolderPath"/initramfs.cpio
+	cp "$(libertine_public_outputMiscPath linux)"/initramfs.cpio "$initrdOutputFilePath"
 }
 
 core_dependency_requires '*' rm cp

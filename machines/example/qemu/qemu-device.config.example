@@ -4,13 +4,16 @@
 
 [machine]
   type = "q35"
-  accel = "kvm:tcg"
+  accel = "kvm:hax:tcg"
   kernel = "${MACHINE_PATH}/libertine-linux.vmlinuz"
-#  append = "x=y"
+  # To add a kernel command line, use:-
+  #append = "x=y"
+  #
+  #?serial dev
 
 [boot-opts]
-  order = "n"
-  menu = "off"
+#  order = "nc"
+  menu = "on"
   reboot-timeout = "60000"
   strict = "on"
 
@@ -32,11 +35,16 @@
   maxcpus = "8"
 
 [drive]
+  aio=native
+  cache=writeback
+  file = "${MACHINE_PATH}/drive.0.qcow2"
   format = "qcow2"
+  if = "virtio"
   index = "0"
   media = "disk"
-  if = "virtio"
-  file = "${MACHINE_PATH}/drive.0.qcow2"
+  rerror=report
+  snapshot=off
+  werror=enospc
 
 [device]
   driver = "virtio-net"
