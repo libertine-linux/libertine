@@ -15,7 +15,7 @@ test_with_qemu_drive()
 		local options=''
 	fi
 	
-	local hardDriveFilePath="$qemuFolderPath"/drive."${index}"."${format}"
+	local hardDriveFilePath="$machineFolderPath"/drive."${index}"."${format}"
 	if $test_with_qemu_force; then
 		rm -rf "$hardDriveFilePath"
 	fi
@@ -31,12 +31,50 @@ test_with_qemu_drive()
 	fi	
 }
 
-test_with_qemu_cpu()
+test_with_qemu_settingsFolderPath()
 {
-	test_with_qemu_cpuOption="$1"
+	pushd "$test_with_qemu_machinesPath"/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
+		settingsFolderPath="$(pwd)"
+	popd
 }
 
-test_with_qemu_keyboard()
+test_with_qemu_machineFolderPath()
 {
-	test_with_qemu_keyboardOption="$1"
+	pushd "$test_with_qemu_machinesPath"/../output/"$test_with_qemu_machine" 1>/dev/null 2>/dev/null
+		machineFolderPath="$(pwd)"
+	popd
+}
+
+test_with_qemu_qemuSettingsFolderPath()
+{
+	qemuSettingsFolderPath="$settingsFolderPath"/qemu
+}
+
+core_dependency_requires '*' head
+test_with_qemu_libertineArchitecture()
+{
+	libertineArchitecture="$(head -n 1 "$settingsFolderPath"/settings/architecture)"
+}
+
+core_dependency_requires '*' uname cat sed
+test_with_qemu_fillInTemplateConfiguration()
+{
+	local TMP_FILE
+	core_temporaryFiles_newFileToRemoveOnExit
+	qemuGeneratedDeviceConfigFilePath="$TMP_FILE"
+
+	# Remove stuff from config that doesn't work on Mac OS et al.
+	{
+		case "$(uname)" in
+	
+			Linux)
+				cat "$qemuDeviceConfigFilePath"
+			;;
+	
+			*)
+				sed -e '/process =/d' "$qemuDeviceConfigFilePath"
+			;;
+	
+		esac
+	} | -e 's;\${SETTINGS_PATH};'"$SETTINGS_PATH"';g' sed -e 's;\${MACHINE_PATH};'"$MACHINE_PATH"';g' -e 's;\${MACHINE_NAME};'"$MACHINE_NAME"';g' >"$qemuGeneratedDeviceConfigFilePath"
 }
