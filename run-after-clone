@@ -117,7 +117,7 @@ run_after_clone_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 	
-	git submodule update --init --recursive --recommend-shallow --depth 5
+	git submodule update --init --recursive
 	
 	cd "packages" 1>/dev/null 2>/dev/null
 	
