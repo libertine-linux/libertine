@@ -90,7 +90,10 @@ build_dockerRun()
 {
 	cd "$dockerBuildFolderPath" 1>/dev/null 2>/dev/null
 		
-		exec docker run --rm --tty --volume "$(pwd)"/../..:/root/libertine:cached --interactive "$dockerName" "$@"
+		# --cap-add SYS_ADMIN --privileged is required so `mount` will work inside the container.
+		# --cap-add SYS_RAWIO --privileged is required so `mlbinstall` will work inside the container (it uses the FIBMAP ioctl).
+		
+		exec docker run --cap-add SYS_ADMIN --cap-add SYS_RAWIO --privileged --rm --tty --volume "$(pwd)"/../..:/root/libertine:delegated --interactive "$dockerName" "$@"
 		
 	cd - 1>/dev/null 2>/dev/null	
 }

@@ -18,6 +18,7 @@ libertine_architecture_setBuild()
 	local _libertine_architecture_llvm
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
+	local _libertine_architecture_efi
 	local _libertine_architecture_cmakeProcessor
 	local _libertine_architecture_unameArchitecture
 	local _libertine_architecture_unameOperatingSystem
@@ -49,6 +50,7 @@ libertine_architecture_setBuild()
 	libertine_buildLlvm="$_libertine_architecture_llvm"
 	libertine_buildLinux="$_libertine_architecture_linux"
 	libertine_buildLinuxSpecific="$_libertine_architecture_linuxSpecific"
+	libertine_buildEfi="$_libertine_architecture_efi"
 	libertine_buildCmakeProcessor="$_libertine_architecture_cmakeProcessor"
 	libertine_buildUnameArchitecture="$_libertine_architecture_unameArchitecture"
 	libertine_buildUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
@@ -82,6 +84,7 @@ libertine_architecture_setHost()
 	local _libertine_architecture_llvm
 	local _libertine_architecture_linux
 	local _libertine_architecture_linuxSpecific
+	local _libertine_architecture_efi
 	local _libertine_architecture_cmakeProcessor
 	local _libertine_architecture_unameArchitecture
 	local _libertine_architecture_unameOperatingSystem
@@ -113,6 +116,7 @@ libertine_architecture_setHost()
 	libertine_hostLlvm="$_libertine_architecture_llvm"
 	libertine_hostLinux="$_libertine_architecture_linux"
 	libertine_hostLinuxSpecific="$_libertine_architecture_linuxSpecific"
+	libertine_hostEfi="$_libertine_architecture_efi"
 	libertine_hostCmakeProcessor="$_libertine_architecture_cmakeProcessor"
 	libertine_hostUnameArchitecture="$_libertine_architecture_unameArchitecture"
 	libertine_hostUnameOperatingSystem="$_libertine_architecture_unameOperatingSystem"
@@ -153,6 +157,14 @@ _libertine_architecture_parse()
 	
 	case "$architecture" in
 		
+		# aarch64)
+		# 	_libertine_architecture_efi='AA64'
+		# ;;
+		#
+		# x86_32)
+		# 	_libertine_architecture_efi='IA32'
+		# ;;
+				
 		x86_64)
 			if $isForBuild; then
 				_libertine_architecture_target='x86_64-BUILD-linux-musl'
@@ -164,6 +176,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_llvm='X86'
 			_libertine_architecture_linux='x86'
 			_libertine_architecture_linuxSpecific='x86_64'
+			_libertine_architecture_efi='X64'
 			_libertine_architecture_cmakeProcessor='x86_64'  # uname -p (although not amd64)
 			_libertine_architecture_unameArchitecture='x86_64'  # uname -m
 			_libertine_architecture_forMuslLd='ld-musl-x86_64.so.1'
@@ -194,6 +207,7 @@ _libertine_architecture_parse()
 			_libertine_architecture_llvm='ARM'
 			_libertine_architecture_linux='arm'
 			_libertine_architecture_linuxSpecific='arm'
+			_libertine_architecture_efi='ARM'
 			_libertine_architecture_cmakeProcessor='armv7l'  # uname -p (so can )
 			_libertine_architecture_unameArchitecture='arm'
 			_libertine_architecture_forMuslLd='ld-linux-armhf.so.3'
