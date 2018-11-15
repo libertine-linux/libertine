@@ -2,10 +2,10 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-core_dependency_requires '*' head
 libertine_architecture_configure()
-{	
-	libertine_architecture="$(head -n 1 "$libertine_machineSettingsFolderPath"/architecture)"
+{
+	libertine_architecture='x86_64'
+	. "$libertine_machineSettingsFolderPath"/architecture.config
 	libertine_architecture_setHost "$libertine_architecture"
 }
 

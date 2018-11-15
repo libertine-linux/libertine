@@ -1,0 +1,151 @@
+HOME = .
+
+[ ca ]
+default_ca             = CA_default
+
+[ CA_default ]
+dir                    = .
+certificate            = $dir/libertine-linux-certificate-authority.certificate.pem
+private_key            = $dir/private/libertine-clinux-ertificate-authority.private-key.pem
+certs                  = $dir/certificates
+new_certs_dir          = $certs
+serial                 = $dir/serial
+database               = $dir/index.txt
+RANDFILE               = $dir/private/rand-file
+crl_dir                = $dir/certificate-revocation-lists
+crlnumber              = $dir/crlnumber
+crl                    = $dir/certificate-revocation-lists/libertine-linux-certificate-authority.certificate-revocation-list.pem
+crl_extensions         = crl_ext
+default_crl_days       = 30
+default_md             = sha512
+policy                 = policy_anything
+preserve               = no
+email_in_dn            = no
+default_days           = 375
+unique_subject         = no
+prompt                 = no
+utf8                   = yes
+copy_extensions	       = copy
+# Explore these
+name_opt               = ca_default
+cert_opt               = ca_default
+
+
+[ policy_strict ]
+countryName             = match
+stateOrProvinceName     = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ policy_loose ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ policy_match ]
+countryName             = match
+stateOrProvinceName     = match
+localityName            = supplied
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ policy_anything ]
+countryName            = optional
+stateOrProvinceName    = optional
+localityName           = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = optional
+emailAddress           = optional
+
+[ req ]
+default_bits           = 4096
+distinguished_name     = req_distinguished_name
+string_mask            = utf8only
+attributes             = req_attributes
+x509_extensions		   = v3_ca
+req_extensions		   = v3_req
+
+[ req_distinguished_name ]
+countryName                    = Country Name (2 letter code, eg UK)
+countryName_default            = UK
+countryName_min                = 2
+countryName_max                = 2
+stateOrProvinceName            = US State or UK county, eg North Yorkshire
+stateOrProvinceName_default    = "North Yorkshire"
+localityName                   = Locality Name (eg a city, such as London)
+localityName_default           = "Skipton"
+0.organizationName               = Company or Charity Name, eg MyCorp Limited
+0.organizationName_default       = "Libertine Linux Generic"
+organizationalUnitName         = Organizational Unit Name (eg, Finance Department)
+organizationalUnitName_default = "Certificate Authority"
+commonName                     = Fully Qualified Domain Name (FQDN)
+commonName_max                 = 64
+commonName_default             = "www.libertine-linux.org"
+emailAddress                   = Email Address
+emailAddress_max               = 40
+emailAddress_default           = "libertine-linux@example.com"
+
+[ req_attributes ]
+
+[ cross ]
+basicConstraints       = critical, CA:true
+keyUsage               = critical, cRLSign, keyCertSign
+
+[ codesigning ]
+keyUsage                = digitalSignature
+extendedKeyUsage        = codeSigning
+
+[ v3_ca ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints        = critical, CA:true
+keyUsage                = critical, digitalSignature, cRLSign, keyCertSign
+
+[ v3_req ]
+subjectAltName = email:move
+
+[ v3_intermediate_ca ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints        = critical, CA:true, pathlen:0
+keyUsage                = critical, digitalSignature, cRLSign, keyCertSign
+
+[ usr_cert ]
+basicConstraints        = CA:FALSE
+nsCertType              = client, email
+nsComment               = "Libertine Linux Generated Client Certificate"
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid,issuer
+keyUsage                = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage        = clientAuth, emailProtection
+
+[ server_cert ]
+basicConstraints        = CA:FALSE
+nsCertType              = server
+nsComment               = "Libertine Linux Generated Server Certificate"
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid,issuer:always
+keyUsage                = critical, digitalSignature, keyEncipherment
+extendedKeyUsage        = serverAuth
+crlDistributionPoints   = URI:http://crl.example.com/certificate-revoctions-lists/libertine-linux-certificate-authority.certificate-revocation-list.pem
+authorityInfoAccess     = OCSP;URI:http://ocsp.example.com
+
+[ crl_ext ]
+issuerAltName           = issuer:copy
+authorityKeyIdentifier  = keyid:always,issuer:always
+
+[ ocsp ]
+basicConstraints        = CA:FALSE
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid,issuer
+keyUsage                = critical, digitalSignature
+extendedKeyUsage        = critical, OCSPSigning

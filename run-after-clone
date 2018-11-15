@@ -71,45 +71,46 @@ _program_path_find()
 	fi
 }
 
-create_key_pair()
+# If we have a build_openssh then we can do this as run time
+create_ssh_key_pair()
 {
 	local keyPairType="$1"
 	
 	local program="$(type -p ssh-keygen)"
 	
-	if [ -n "$program" ]; then
-		
-		case "$keyPairType" in
-			
-			dsa)
-				set -- -b 1024
-			;;
-			
-			ecdsa)
-				set -- -b 521
-			;;
-			
-			ed25519)
-				set --
-			;;
-			
-			rsa)
-				set -- -b 4096
-			;;
-			
-		esac
-		
-		IFS=
-		
-		set +e
-		ssh-keygen -q "$@" -t ed25519 -N '' -C "$keyPairType host key for example machine" -f "machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key"
-		set -e
-		
-		if [ $? -ne 0 ]; then
-			printf '%s\n' "Could not generate a $keyPairType host key pair for the example machine using ssh-keygen; please create it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
-		fi
-	else
+	if [ -z "$program" ]; then
 		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as ssh-keygen is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
+		return 0
+	fi
+	
+	case "$keyPairType" in
+		
+		dsa)
+			set -- -b 1024
+		;;
+		
+		ecdsa)
+			set -- -b 521
+		;;
+		
+		ed25519)
+			set --
+		;;
+		
+		rsa)
+			set -- -b 4096
+		;;
+		
+	esac
+	
+	IFS=
+	
+	set +e
+		ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for example machine" -f machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
+	set -e
+	
+	if [ $? -ne 0 ]; then
+		printf '%s\n' "Could not generate a $keyPairType host key pair for the example machine using ssh-keygen; please create it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
 	fi
 }
 
@@ -125,9 +126,11 @@ run_after_clone_main()
 	
 	cd - 1>/dev/null 2>/dev/null
 	
-	create_key_pair 'ed25519'
-	create_key_pair 'rsa'
-	create_key_pair 'ecdsa'
+	umask 7077
+	
+	create_ssh_key_pair 'ed25519'
+	create_ssh_key_pair 'rsa'
+	create_ssh_key_pair 'ecdsa'
 }
 
 run_after_clone_main "$@"

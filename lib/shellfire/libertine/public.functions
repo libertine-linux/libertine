@@ -1274,3 +1274,10 @@ libertine_public_secureBinary()
 	paxctl -"$flags" "$binaryFilePath"
 	
 }
+
+libertine_public_touchWithKnownDateTime()
+{
+	local fileToTouch="$1"
+	
+	touch -c -h -t "$libertine_hostUnameTimestampTouch" "$fileToTouch"
+}

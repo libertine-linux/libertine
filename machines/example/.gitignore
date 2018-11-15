@@ -4,3 +4,4 @@
 
 # Public keys are always re-generated on check out for the 'example' machine
 ssh_host_*_key.pub
+code-signing/*.key.pem

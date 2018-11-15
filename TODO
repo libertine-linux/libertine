@@ -1,0 +1,91 @@
+
+# PXE Boot loading supporting BIOS and UEFI before 2.5:-
+	* Review http://ipxe.org/howto/chainloading
+	* Build iPXE with an embedded script that connects to a known HTTP(S) server, and downloads the requisite runtime script
+	* Design a simple HTTPS server that can load config file to serve up a machine-specific image, typically by providing a iPXE script that references a HTTPS accessible image
+	* So the build process needs to output a iPXE script that contains the necessary incantations.
+	
+# UEFI 2.7 supports HTTP(S) loading of an EFI stub'd kernel; likewise, we will have to detect it using IP source address discovery
+
+
+# iPXE imgtrust and imgverify
+	* Nice; prevents unsigned kernels running
+	* Only effective if iPXE hasn't been loaded over the network (or if using vultr's scripts, although they probably also use DHCP), at which point, it needs to have been loaded from a machine local, as:-
+		- need to embed signer details into iPXE binary
+
+# iPXE supports client certificates
+	* Stored with an unencrypted private key inside the iPXE binary, so, again, only really useful if iPXE is installed locally
+
+So...
+	There is an argument for building specialized iPXE binaries which embed a client certificate, trusted root certificates, a signing key (to verify kernel images) and the ability to load a specific machine kernel, and have a hard-coded IP address, and so eliminate DHCP, TFTP and all the associated cruft. These would run in UEFI or BIOS mode. The downside here is that it would be impossible to change, easily, a machine's IP address details, but it would be possible to boot it securely over the network, at the cost a of locally attached USB or ISO.
+	See http://ipxe.org/crypto
+
+Consider http://reboot.pro/files/file/303-tiny-pxe-server/ - tiny pxe server
+
+
+
+Per-Machine script, to output to output/machines/${MACHINE_NAME}/boot.ipxe
+Can be embedded in a bootable IMG, one for BIOS and one for UEFI, with a custom-made iPXE chain-loader (ipxe.efi / undionly.pxe)
+
+
+1. Make a generic BIOS and UEFI bootable image:-
+cat >chainload.ipxe <<-EOF
+	#!ipxe
+	
+	dhcp
+	chain http://${PXE_HTTPS_SERVER}/chainload/boot.sh
+EOF
+make bin/undionly.kpxe EMBED=chainload.ipxe
+
+1.1 Put this image into the 'chainload' folder
+
+2. Create the script 'boot.sh'
+
+cat >chainload/boot.sh <<EOF
+#!/usr/bin/env sh
+
+# TODO: Parse incoming IP address and translate into machine name
+	# Will require a symlink entry under output, potentially.
+	# eg under chainload folder; needs to be rsync friendly. We may want to develop a custom iPXE server based on Rust that can auto-reload.
+EOF
+
+
+
+To build OVMF:-
+
+See http://www.linux-kvm.org/downloads/lersek/ovmf-whitepaper-c770f8c.txt
+
+build OVMF:
+
+  git clone https://github.com/tianocore/edk2.git
+  cd edk2
+  nice OvmfPkg/build.sh -a X64 -n $(getconf _NPROCESSORS_ONLN)
+  
+cp Build/OvmfX64/DEBUG_GCC4?/FV/OVMF.fd fedora.flash
+
+  (The variable store and the firmware executable are also available in the
+  build output as separate files: "OVMF_VARS.fd" and "OVMF_CODE.fd". This
+  enables central management and updates of the firmware executable, while each
+  virtual machine can retain its own variable store.)
+  
+
+
+QEMU options, either
+	-drive if=pflash,format=raw,file=fedora.flash
+or
+	-drive if=pflash,format=raw,unit=0,file=path_to_OVMF_CODE.fd,readonly=on
+	-drive if=pflash,format=raw,unit=1,file=path_to_OVMF_VARS.fd
+	
+	
+
+
+Need to add support for
+	mkisofs / genisofs (cdrkit)
+	tiano core (eg to build OVMF or rEFInd)
+	iPXE
+	
+
+Missing musl functionality
+	https://github.com/pullmoll/musl-obstack
+	https://github.com/pullmoll/musl-rpmatch
+	

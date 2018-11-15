@@ -47,7 +47,6 @@ I also like simple DevOps, and the ability to make the OS and the software I dep
 Lastly, though, the development of Libertine Linux debunks the mantra that the bazaar is better than the cathedral; it`s not. The lack of coherent end-to-end thinking (from computer scientist with a clever algo, to system administrator patching security holes, via kernel and system and application software developers) is why we have complex, brittle and insecure systems today. Too few of us have enough experience or interest to see from one end to the other. And none have the time or finances to count. Too few place value on what they perceive as the little things - consistency, organization and communication - and instead retreat into jargon and flame wars. Until superb programming is equated more with fine art and the best examples of literature, and not historic and strange practices, security and integrity will suffer. I am as guilty as most; just look at some of my descriptions below!
 
 
-
 ## Key Features
 
 * Recreate any server exactly from source control: Everything is built from source
@@ -156,7 +155,8 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 		* This allows configuration to be `built up`
 		* Same approach is used for `/etc/passwd`, `/etc/group` etc, allowing as much as possible to live in source control as plain text files.
 	* Downstream packages can override any snippet, if you don`t like it, just create a file with the same name
-	* The set of snippets to combine are extensible; just have your package drop a `my-package-name.combine` file in `/etc/combine.d`
+	* The set of snippets to combine are extensible; just have your package drop a `my-package-name.combine` file in `/etc/combine.d`.
+	* POSIX shell variables can be used in the snippets (which are effectively templates) to configure networking or architecture, using anything in `architecture.config` or `networking.config`.
 	* Current snippeted features in the baseline filesystem (package `libertine_filesystem`) include:-
 		* `/etc/binfmt.d`
 			* used in shell glob sort order
@@ -260,7 +260,8 @@ machines/
 			...
 		packages/   (usually a symlink)
 		settings/
-			architecture
+			architecture.config
+			networking.config
 			initramfs.contents
 			packages.list
 			compiler-flags/
@@ -270,6 +271,8 @@ machines/
 				host-cxx.compiler-flags
 			initramfs/
 				<files and folders to copy onto the initial initramfs>
+		code-signing/
+		client-authentication/
 		qemu/
 			qemu-command-line.config
 			qemu-drives.config
@@ -305,9 +308,14 @@ This is usually a symlink to a git-controlled folder of packages, typically from
 ### `settings`
 
 
-#### `architecture`
+#### `architecture.config`
 
-This file contains just one line (with no terminal line feed) containing the architecture of the machine being built, eg `x86_64`. At this time no other architectures have been successfully tested, although support for 64-bit ARM (`aarch64`) is desirable.
+This file contains a definition the architecture of the machine being built, eg `libertine_architecture='x86_64'`. At this time no other architectures have been successfully tested, although support for 64-bit ARM (`aarch64`) is desirable.
+
+
+#### `networking.config`
+
+This file contains definitions for networking variables, which are used (as of the time of writing) to configure the Linux kernel, fill in some files in the initramfs (eg `/etc/domainname`, `/etc/resolv.conf`) and to populate static interface definitions for, say, eth0 (`machines/example/settings/initramfs/etc/interfaces.d/eth0.dhcp.interfaces`) and iPXE.
 
 
 #### `initramfs.contents`
@@ -375,6 +383,22 @@ The files used are:-
 These are machine-specfic files to be put into the resultant Linux initramfs disk image. The folder structure inside this folder is preserved as-is, although permissions, user ids and group ids can be overridden using the `initramfs.contents` file. A typical thing to include might be SSH host private keys, machine specific configuration for syslog or sysctl, network interface configuration, static HTTP content to serve and the like. Nothing that requires a writable disk at runtime should be in here.
 
 Content that should not end up in source control (git), eg SSH private keys, should be explicitly ignored using `.gitignore`, or a solution such as `git-crypt` used.
+
+
+### `code-signing/`
+
+The files in here are used to sign the produced linux kernel (`libertine-linux.vmlinuz`). They are generated automatically during the build if not present. The files are standard OpenSSL PEM files containing:-
+
+* `libertine-linux.vmlinuz.certificate.pem`: a code signing certificate;
+* `libertine-linux.vmlinuz.key.pem`: a RSA private key (currently 4096 bits)
+
+
+### `client-authentication/`
+
+The files in here are used to authenticate a iPXE client to a server when booting. They are generated automatically during the build if not present. The files are standard OpenSSL PEM files containing:-
+
+* `client-authentication.certificate.pem`: a code signing certificate;
+* `client-authentication.key.pem`: a RSA private key (currently 4096 bits)
 
 
 ### `qemu`

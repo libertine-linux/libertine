@@ -18,8 +18,8 @@ _program()
 		local qemuSettingsFolderPath
 		test_with_qemu_qemuSettingsFolderPath
 
-		local libertineArchitecture
-		test_with_qemu_libertineArchitecture
+		local libertine_architecture
+		test_with_qemu_libertine_architecture
 		
 		local SETTINGS_PATH="$qemuSettingsFolderPath"
 		local MACHINE_PATH="$machineFolderPath"

@@ -586,12 +586,15 @@ core_dependency_requires '*' rm cp
 libertine_compile_copyOverFinishedBuildProducts()
 {
 	local kernelOutputFilePath="$libertine_machineOutputFolderPath"/libertine-linux.vmlinuz
-	core_message NOTICE "Installing linux kernel to '$kernelOutputFilePath'"
-	rm -rf "$kernelOutputFilePath"
+	
+	core_message NOTICE "Removing any previous output and installing linux kernel and associated files to '$kernelOutputFilePath'"
+	
+	set +f
+		rm -rf "$kernelOutputFilePath"/*
+	set -f
+	
 	cp "$(libertine_public_outputMiscPath linux)"/vmlinuz "$kernelOutputFilePath"
-
-	local initramfsOutputFilePath="$libertine_machineOutputFolderPath"/initramfs.cpio
-	cp "$(libertine_public_outputMiscPath linux)"/initramfs.cpio "$initrdOutputFilePath"
+	cp "$(libertine_public_outputMiscPath linux)"/initramfs.cpio.xz "$libertine_machineOutputFolderPath"
 }
 
 core_dependency_requires '*' rm cp

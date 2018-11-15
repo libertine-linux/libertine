@@ -30,19 +30,30 @@ libertine_hash_computePackageHash()
 	fi
 	
 	# From machine:-
-	# 	Presence & content of "$package".config
-	# 	Presence & content of "$package.mk"
+	# 	Presence & content of "$package".config or "$package".mk or "$package"/
+	# 	Presence & contents of architecture.config and networking.config
 	# 	Presence & contents of compiler-flags/
-	# 	Presence & contents of architecture
 	local configurationFileName
-	for configurationFileName in "$package".config "$package".mk
+	set +f
+	for configurationFileName in "$package".config "$package".mk "$package"/*
 	do
+		set -f
 		local configurationFilePath="$libertine_machinePackageConfigurationsFolderPath"/"$configurationFileName"
 		if [ -f "$configurationFilePath" ]; then
 			cp "$configurationFilePath" "$hashCalculationFolderPath"
 		fi
 	done
-	cp "$libertine_machineSettingsFolderPath"/architecture "$hashCalculationFolderPath"
+	set -f
+	
+	local architectureFilePath="$libertine_machineSettingsFolderPath"/architecture.config
+	if [ -f "$architectureFilePath" ]; then
+		cp "$architectureFilePath" "$hashCalculationFolderPath"
+	fi
+	
+	local networkingFilePath="$libertine_machineSettingsFolderPath"/networking.config
+	if [ -f "$networkingFilePath" ]; then
+		cp "$networkingFilePath" "$hashCalculationFolderPath"
+	fi
 	
 	mkdir -m 0700 -p "$hashCalculationFolderPath"/compiler-flags
 	local file

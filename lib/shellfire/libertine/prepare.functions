@@ -22,7 +22,22 @@ libertine_prepare_setEssentialGlobalVariables()
 	
 	libertine_machinesFolderPath="$libertine_machinesPath"
 	
-	#libertine_machinesOutputFolderPath=~/.l
+	libertine_certificateAuthorityFolderPath="$libertine_authorityPath"
+	if ! core_path_isReadableAndSearchableAndWritableFolderPath "$libertine_certificateAuthorityFolderPath"; then
+		core_exitError $core_commandLine_exitCode_CONFIG "Either the folder '$libertine_certificateAuthorityFolderPath' does not exist, is not a directory, can't be read, searched or written to"
+	fi
+	libertine_certificateAuthorityBaseName='libertine-linux'
+	
+	libertine_certificateAuthorityConfigurationFilePath="$libertine_certificateAuthorityFolderPath"/"$libertine_certificateAuthorityBaseName".openssl.cnf
+	if ! core_path_isReadableNonEmptyFilePath "$libertine_certificateAuthorityConfigurationFilePath"; then
+		core_exitError $core_commandLine_exitCode_CONFIG "Either the file '$libertine_certificateAuthorityConfigurationFilePath' does not exist, is not a file, can't be read or has no content"
+	fi
+	
+	libertine_certificateAuthorityLockFolderPath="$libertine_certificateAuthorityFolderPath"/.lock
+	
+	libertine_certificateAuthorityCertificateFilePath="$libertine_certificateAuthorityFolderPath"/certificates/"$libertine_certificateAuthorityBaseName".certificate.pem
+	libertine_certificateAuthorityPrivateKeyFilePath="$libertine_certificateAuthorityFolderPath"/private/"$libertine_certificateAuthorityBaseName".private-key.pem
+		
 	libertine_machinesOutputFolderPath="$_program_path"/output
 	
 	mkdir -m 0700 -p "$libertine_machinesOutputFolderPath"

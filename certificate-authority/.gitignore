@@ -1,0 +1,5 @@
+serial
+index.txt
+libertine-certificate-authority.certificate-request.pem
+libertine-certificate-authority.certificate.pem
+.lock

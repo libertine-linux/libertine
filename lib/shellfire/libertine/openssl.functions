@@ -1,0 +1,163 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2018 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+# openssl deliberately excluded.
+core_dependency_requires '*' test rm chmod
+libertine_openssl_initializeCertificateAuthority()
+{	
+	_libertine_openssl_certificateAuthorityLock_acquireCertificateAuthorityMutexLock
+	
+		pushd "$libertine_certificateAuthorityFolderPath"
+			
+			# Create certificate authority self-signed root certificate.
+			if [ ! -e "$libertine_certificateAuthorityCertificateFilePath" ]; then
+				
+				local TMP_FILE
+				core_temporaryFiles_newFileToRemoveOnExit
+				local certificateRequestFilePath="$TMP_FILE"
+				
+				rm -rf "$libertine_certificateAuthorityPrivateKeyFilePath"
+	
+				openssl req -config "$libertine_certificateAuthorityConfigurationFilePath" -new -newkey rsa -keyout "$libertine_certificateAuthorityPrivateKeyFilePath" -out "$certificateRequestFilePath" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -nodes
+	
+				openssl ca -config "$libertine_certificateAuthorityConfigurationFilePath" -create_serial -out "$libertine_certificateAuthorityCertificateFilePath" -outform PEM -days 3650 -keyfile $libertine_certificateAuthorityPrivateKeyFilePath -selfsign -extensions v3_ca_has_san -infiles "$certificateRequestFilePath"
+	
+				chmod 0600 $libertine_certificateAuthorityPrivateKeyFilePath
+	
+				rm -rf "$certificateRequestFilePath"
+			fi
+						
+		popd
+	
+	_libertine_openssl_certificateAuthorityLock_releaseCertificateAuthorityMutexLock
+}
+
+core_dependency_requires '*' mkdir rm
+libertine_openssl_perMachineKernelCodeSigningCertificate()
+{
+	local package="$1"
+
+	local codeSigningFolderPath="$libertine_machinesFolderPath"/"$package"/code-signing
+	mkdir -m 0755 -p "$codeSigningFolderPath"
+	
+	_libertine_openssl_certificateAuthorityLock_acquireCertificateAuthorityMutexLock
+	
+		local codeSigningCertificateFilePath="$codeSigningFolderPath"/libertine-linux.vmlinuz.certificate.pem
+		local codeSigningKeyFilePath="$codeSigningFolderPath"/libertine-linux.vmlinuz.key.pem
+		
+		if [ ! -e "$codeSigningCertificateFilePath" ]; then
+			
+			rm -rf "$codeSigningKeyFilePath"
+			
+			local TMP_FILE
+			core_temporaryFiles_newFileToRemoveOnExit
+			local certificateRequestFilePath="$TMP_FILE"
+
+			openssl req -config "$libertine_certificateAuthorityConfigurationFilePath" -new -newkey rsa -keyout "$codeSigningKeyFilePath" -out "$certificateRequestFilePath" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -nodes
+			
+			openssl ca -config "$libertine_certificateAuthorityConfigurationFilePath" -extensions codesigning -in "$certificateRequestFilePath" -out "$codeSigningCertificateFilePath"
+			
+			rm -rf "$certificateRequestFilePath"
+		fi
+		
+	_libertine_openssl_certificateAuthorityLock_releaseCertificateAuthorityMutexLock
+}
+
+libertine_openssl_codeSign()
+{
+	local inFilePath="$1"
+	local outFilePath="$2"
+
+	local codeSigningFolderPath="$libertine_machinesFolderPath"/"$package"/code-signing
+	local codeSigningCertificateFilePath="$codeSigningFolderPath"/libertine-linux.vmlinuz.certificate.pem
+	local codeSigningKeyFilePath="$codeSigningFolderPath"/libertine-linux.vmlinuz.key.pem
+	
+	_libertine_openssl_certificateAuthorityLock_acquireCertificateAuthorityMutexLock
+		
+		openssl cms -config "$libertine_certificateAuthorityConfigurationFilePath" -sign -binary -noattr -in "$inFilePath" -signer "$codeSigningCertificateFilePath" -inkey "$codeSigningKeyFilePath" -certfile "$libertine_certificateAuthorityCertificateFilePath" -outform DER -out "$outFilePath"
+		
+	_libertine_openssl_certificateAuthorityLock_releaseCertificateAuthorityMutexLock
+}
+
+libertine_openssl_perMachineClientCertificate()
+{
+	local package="$1"
+
+	local clientAuthenticationFolderPath="$libertine_machinesFolderPath"/"$package"/client-authentication
+	mkdir -m 0755 -p "$clientAuthenticationFolderPath"
+	
+	_libertine_openssl_certificateAuthorityLock_acquireCertificateAuthorityMutexLock
+	
+		local clientAuthenticationCertificateFilePath="$clientAuthenticationFolderPath"/client.certificate.pem
+		local clientAuthenticationKeyFilePath="$clientAuthenticationFolderPath"/client.key.pem
+		
+		if [ ! -e "$clientAuthenticationCertificateFilePath" ]; then
+			
+			rm -rf "$clientAuthenticationKeyFilePath"
+			
+			local TMP_FILE
+			core_temporaryFiles_newFileToRemoveOnExit
+			local certificateRequestFilePath="$TMP_FILE"
+			
+			openssl req -config "$libertine_certificateAuthorityConfigurationFilePath" -new -newkey rsa -keyout "$clientAuthenticationKeyFilePath" -out "$certificateRequestFilePath" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -nodes
+			
+			openssl ca -config "$libertine_certificateAuthorityConfigurationFilePath" -extensions codesigning -in "$certificateRequestFilePath" -out "$clientAuthenticationCertificateFilePath"
+			
+			rm -rf "$certificateRequestFilePath"
+		fi
+		
+	_libertine_openssl_certificateAuthorityLock_releaseCertificateAuthorityMutexLock
+}
+
+core_dependency_requires '*' rm
+libertine_openssl_certificateAuthorityLock_addLockTrapHandler()
+{
+	libertine_openssl_certificateAuthorityLock_addLockTrapHandler_callback()
+	{
+		if $_libertine_openssl_certificateAuthorityLock_addLockTrapHandler; then
+			
+			pushd "$libertine_certificateAuthorityFolderPath"
+	
+				rm -rf .lock
+	
+			popd
+		fi
+	}
+
+	_libertine_openssl_certificateAuthorityLock_addLockTrapHandler=false
+	core_trap_addOnCleanUp libertine_openssl_certificateAuthorityLock_addLockTrapHandler_callback
+}
+
+core_dependency_requires '*' mkdir sleep
+_libertine_openssl_certificateAuthorityLock_acquireCertificateAuthorityMutexLock()
+{
+	# If SIGTERM happens after mkdir but before assignment of the $package value to _libertine_openssl_certificateAuthorityLock_addLockTrapHandler, then the lock folder may be left locked
+	pushd "$libertine_certificateAuthorityFolderPath"
+		
+		# Spinlock
+		while true
+		do
+			if mkdir .lock; then
+				_libertine_openssl_certificateAuthorityLock_addLockTrapHandler=true
+				return 0
+			else
+				core_message NOTICE "Waiting 1 second to acquire lock for certificate authority '$libertine_certificateAuthorityFolderPath/.lock'"
+				sleep 1
+			fi
+		done
+		
+	popd
+}
+
+core_dependency_requires '*' rm
+_libertine_openssl_certificateAuthorityLock_releaseCertificateAuthorityMutexLock()
+{
+	# If SIGTERM happens after rm -rf but before assignment of '' to _libertine_openssl_packageLock_addLockTrapHandler_package our trap handler runs and potentially deletes another processes' lock
+	pushd "$libertine_certificateAuthorityFolderPath"
+
+		rm -rf .lock
+		_libertine_openssl_certificateAuthorityLock_addLockTrapHandler=false
+		
+	popd
+}

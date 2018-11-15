@@ -1,0 +1,50 @@
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2018 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+
+libertine_networking_configure()
+{
+	machine_networkingIpxeInterface='net0'
+	machine_networkingLinuxInterface='eth0'
+	machine_networkingMediaAccessControlAddress='02:01:02:03:04:08'
+
+	# Used for UTS_DOMAINNAME in Linux and for /etc/dnsdomainname (machine's name, in this case 'example', is used for CONFIG_DEFAULT_HOSTNAME in Linux's .config and /etc/hostname)
+	machine_networkingDomain='localdomain'
+	machine_networkingResolvConfDomain="$machine_networkingDomain"
+
+	machine_networkingIpv4Address='10.211.55.29'
+	machine_networkingIpv4Netmask='255.0.0.0'
+	machine_networkingIpv4Gateway='10.211.55.1'
+	machine_networkingIpv4Broadcast='10.211.55.255'
+	machine_networkingIpv4Network='10.0.0.0'
+	machine_networkingIpv4DomainNameServers='1.1.1.1 1.0.0.1'
+
+	machine_networkingIpv6Address='2001:470:ffff:ff::2'
+	machine_networkingIpv6NetMask='64'
+	machine_networkingIpv6Gateway='2001:470:ffff:ff::1'
+	machine_networkingIpv6DomainNameServers='2606:4700:4700::1111 2606:4700:4700::1001'
+	
+	. "$libertine_machineSettingsFolderPath"/networking.config
+
+	if core_variable_isUnset machine_networkingDomain; then
+		machine_networkingDomain='local'
+	fi
+
+	if core_variable_isUnset machine_networkingResolvConfDomain; then
+		machine_networkingResolvConfDomain="$machine_networkingDomain"
+	fi
+
+	if core_variable_isUnset machine_networkingSyslogServer; then
+		machine_networkingSyslogServer=syslog."${machine_networkingDomain}"
+	fi
+
+	if core_variable_isUnset machine_networkingIpxeBootServer; then
+		machine_networkingIpxeBootServer=ipxeboot."${machine_networkingDomain}"
+	fi
+	
+	local remainder
+	IFS=' ' read -r machine_networkingIpv4PrimaryDomainNameServer remainder <<-EOF
+		${machine_networkingIpv4DomainNameServers}
+	EOF
+	
+}

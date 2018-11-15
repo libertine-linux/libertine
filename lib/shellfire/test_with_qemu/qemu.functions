@@ -59,9 +59,10 @@ test_with_qemu_qemuSettingsFolderPath()
 }
 
 core_dependency_requires '*' head
-test_with_qemu_libertineArchitecture()
+test_with_qemu_libertine_architecture()
 {
-	libertineArchitecture="$(head -n 1 "$settingsFolderPath"/settings/architecture)"
+	libertine_architecture='x86_64'
+	. "$settingsFolderPath"/settings/architecture
 }
 
 core_dependency_requires '*' uname cat sed
