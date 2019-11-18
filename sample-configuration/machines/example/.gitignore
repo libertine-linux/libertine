@@ -2,6 +2,6 @@
 # Copyright © 2018 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
 
 
-# Public keys are always re-generated on check out for the 'example' machine
+# Public keys are always re-generated on check out for the 'example' machine by `./run-after-clone`.
 ssh_host_*_key.pub
 code-signing/*.key.pem

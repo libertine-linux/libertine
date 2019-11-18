@@ -1,0 +1,307 @@
+#!/usr/bin/env sh
+# COPYRIGHT
+
+
+set -e
+set -f
+set -u
+
+program_name="alpine-linux-enter-chroot"
+
+_program_path_find()
+{
+	if [ "${0%/*}" = "$0" ]; then
+
+		# We've been invoked by the interpreter as, say, bash program
+		if [ -r "$0" ]; then
+			pwd -P
+		# Clutching at straws; probably run via a download, anonymous script, etc, weird execve, etc
+		else
+			printf '\n'
+		fi
+
+	else
+
+		# We've been invoked with a relative or absolute path (also when invoked via PATH in a shell)
+
+		_program_path_find_parentPath()
+		{
+			parentPath="${scriptPath%/*}"
+			if [ -z "$parentPath" ]; then
+				parentPath='/'
+			fi
+			cd "$parentPath" 1>/dev/null
+		}
+
+		# pdksh / mksh have problems with unsetting a variable that was never set...
+		if [ "${CDPATH+set}" = 'set' ]; then
+			unset CDPATH
+		fi
+
+		if command -v realpath 1>/dev/null 2>/dev/null; then
+			(
+				scriptPath="$(realpath "$0")"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		elif command -v readlink 1>/dev/null 2>/dev/null; then
+			(
+				local recursionDepth=0
+				_program_path_resolve_symlinks_recursively()
+				{
+					local unresolvedPath="$1"
+					
+					recursionDepth=$((recursionDepth + 1))
+					
+					if [ $recursionDepth -gt 10 ]; then
+						printf '%s\n' 'Recursion to depths greater than 10 is not allowed when resolving links.'
+						return 1
+					fi
+					
+					local potentialLinkDestination="$(readlink -- "$unresolvedPath")"
+					
+					if [ -z "$potentialLinkDestination" ]; then
+						scriptPath="$unresolvedPath"
+						return 0
+					fi
+					local linkDestination="$potentialLinkDestination"
+					local parentFolderPath="${unresolvedPath%/*}"
+					
+					if [ "$parentFolderPath" = "$unresolvedPath" ]; then
+						_program_path_resolve_symlinks_recursively "$linkDestination"
+					else
+						case "$linkDestination" in
+														
+							/*)
+								_program_path_resolve_symlinks_recursively "$linkDestination"
+							;;
+							
+							*)
+								_program_path_resolve_symlinks_recursively "$parentFolderPath"/"$linkDestination"
+							;;
+							
+						esac
+					fi
+				}
+
+				scriptPath="$0"
+				_program_path_resolve_symlinks_recursively "$scriptPath"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		else
+			# This approach will fail in corner cases where the script itself is a symlink in a path not parallel with the concrete script
+			(
+				scriptPath="$0"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		fi
+
+	fi
+}
+
+fail()
+{
+	local message="$1"
+	
+	printf '%s:FAIL:%s\n' "$program_name" "$message" 1>&2
+	exit 1
+}
+
+depends()
+{
+	local binary
+	for binary in "$@"
+	do
+		if ! command -v "$binary" 1>/dev/null 2>/dev/null; then
+			printf '%s:%s\n' "$program_name" "The binary `$binary` is not on the PATH"
+			local EX_OSFILE=72
+			exit $EX_OSFILE
+		fi
+	done
+}
+
+alpine_linux_enter_chroot()
+{
+	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
+
+	. "$(pwd)"/alpine-linux.functions.sh
+
+	local environment_parseCommandLineArguments_message="${program_name} Enters an Alpine Linux chroot.
+
+Usage: ${program_name} -h | --help
+Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder] [-d|--data /path/to/chroot/data/folder]
+
+If the configuration folder path is not provided, it defaults to program_location/configuration.
+
+If the output folder path is not provided, it defaults to program_location/output. The output folder path is created as necessary.
+
+If the chroot data folder path is not provided, it defaults to program_location/data.
+"
+	_additionalArgumentsCallback()
+	{
+		case "$key" in
+
+			-d|--data)
+				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				alpine_linux_dataFolderPath="$value"
+				alpine_linux_dataFolderPathParsed=true
+
+				_additionalArgumentsCallback_shiftUp=1
+			;;
+
+			--data=*)
+				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
+				alpine_linux_dataFolderPath="${key##--data=}"
+				alpine_linux_dataFolderPathParsed=true
+
+				_additionalArgumentsCallback_shiftUp=0
+
+			;;
+
+			-d*)
+				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
+				alpine_linux_dataFolderPath="${key##-o}"
+				alpine_linux_dataFolderPathParsed=true
+
+				_additionalArgumentsCallback_shiftUp=0
+			;;
+
+			*)
+				environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
+			;;
+
+		esac
+	}
+	_positionalArgumentsCallback()
+	{
+		if [ $# -eq 0 ]; then
+			environment_parseCommandLineArguments_errorHelp "At least one positional argument should be specified (an absolute path to a binary to run in the chroot)"
+		fi
+	}
+	local alpine_linux_positionalArgumentsStartAt
+	local alpine_linux_configurationFolderPath
+	local alpine_linux_outputFolderPath
+	local alpine_linux_dataFolderPath
+	local alpine_linux_dataFolderPathParsed
+	alpine_linux_parseCommandLineArguments _additionalArgumentsCallback _positionalArgumentsCallback "$@"
+	
+	alpine_linux_validateCommandLineArguments
+	
+	if [ -z "$alpine_linux_dataFolderPath" ]; then
+		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path is empty"
+	fi
+	if [ ! -e "$alpine_linux_dataFolderPath" ]; then
+		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' does not exist"
+	fi
+	if [ ! -r "$alpine_linux_dataFolderPath" ]; then
+		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not readable"
+	fi
+	if [ ! -d "$alpine_linux_dataFolderPath" ]; then
+		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not a directory"
+	fi
+	if [ ! -x "$alpine_linux_dataFolderPath" ]; then
+		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not searchable"
+	fi
+	local absoluteFolderPath
+	environment_makeFolderPathAbsolute "$alpine_linux_dataFolderPath"
+	alpine_linux_dataFolderPath="$absoluteFolderPath"
+
+	local alpine_linux_temporaryFolderPath
+	local alpine_linux_versionFilePath
+	local alpine_linux_packagesFilePath
+	local alpine_linux_busyboxStaticBinariesFilePath
+	local alpine_linux_mirrorFolderPath
+	local alpine_linux_mirrorVersionFilePath
+	local alpine_linux_indexFolderPath
+	local alpine_linux_indexVersionFilePath
+	local alpine_linux_packagesFolderPath
+	local alpine_linux_packagesVersionFilePath
+	local alpine_linux_extractFolderPath
+	local alpine_linux_extractVersionFilePath
+	local alpine_linux_extractPackagesFilePath
+	local alpine_linux_extractBusyboxStaticBinariesFilePath
+	local alpine_linux_majorVersion
+	local alpine_linux_minorVersion
+	local alpine_linux_revisionVersion
+	local alpine_linux_apkToolsVersion
+	local alpine_linux_versionMirror
+	local alpine_linux_releasesMirror
+	local alpine_linux_architecture
+	alpine_linux_setEnvironmentVariables
+
+	"$(pwd)"/alpine-linux-x --configuration "$alpine_linux_configurationFolderPath" --output "$alpine_linux_outputFolderPath"
+
+	local alpine_linux_chrootFolderPath="$alpine_linux_outputFolderPath"/chroot
+
+	# TODO: Prepare a chroot environment / or create a new disk (dd, sudo mount, fdisk, mkfs.ext4)
+	# Need to (a) copy in any additional content and (b) make sure we don't always blow it away and (c) --rbind /proc
+
+# TODO: run a binary other than /bin/sh
+# TODO: populate chroot with 'usr/local'
+# TODO: compile mrustc
+
+	cp -a "$alpine_linux_extractFolderPath"/ "$alpine_linux_chrootFolderPath"/
+	set +f
+		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
+	set -f
+
+	# Create basic folders.
+	local folder
+	for folder in dev etc mnt proc sys var var/run
+	do
+		mkdir -m 0700 -p "$alpine_linux_chrootFolderPath"/"$folder"
+	done
+
+	if [ ! -e /dev ]; then
+		fail "Make sure '/dev' exists"
+	fi
+	if [ ! -d /dev ]; then
+		fail "Make sure '/dev' is a directory"
+	fi
+
+	if [ ! -e /sys ]; then
+		fail "Make sure '/sys' exists"
+	fi
+	if [ ! -d /dev ]; then
+		fail "Make sure '/sys' is a directory"
+	fi
+
+	cd "$alpine_linux_chrootFolderPath" 1>/dev/null 2>/dev/null
+
+		trap "" EXIT HUP INT QUIT TERM
+
+		set +e
+			# Exit code is 32 if already mounted.
+			sudo mount -t proc proc "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
+			sudo mount --rbind /sys "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
+			sudo mount --rbind /dev "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
+
+
+			shift $alpine_linux_positionalArgumentsStartAt
+			sudo /usr/bin/env chroot . "$@"
+			local exitCode=$?
+			
+
+			# Exit code is 32 if not mounted.
+			sudo umount "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
+			sudo umount "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
+			sudo umount "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
+
+			if [ $exitCode -ne 0 ]; then
+				exit $exitCode
+			fi
+		set -e
+
+		trap - EXIT HUP INT QUIT TERM
+
+	cd - 1>/dev/null 2>/dev/null
+
+}
+
+alpine_linux_enter_chroot "$@"

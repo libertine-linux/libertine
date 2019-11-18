@@ -4,7 +4,7 @@ A secure, built-from git-controlled source Linux system that is fully auditable 
 
 Produces ready-to-run images that consist of just one file ready to be booted using grub, pxeboot or QEMU with an embedded copy of all required software inside a read-only init disk.
 
-And, because it bootstraps itself from almost nothing, only a system C and C++ compiler, binutils and BusyBox are all that are needed to get started (although a wrapper script using docker is usually more convenient).
+And, because it bootstraps itself from almost nothing, only a system C and C++ compiler, binutils and BusyBox are all that are needed to get started (although a wrapper script using an Alpine Linux chroot is usually more convenient).
 
 
 ## Quick Start

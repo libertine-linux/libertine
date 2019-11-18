@@ -1,5 +1,5 @@
-[submodule "packages"]
-	path = packages
+[submodule "sample-configuration/packages"]
+	path = sample-configuration/packages
 	url = https://github.com/libertine-linux/packages.git
 	branch = master
 	update = checkout
