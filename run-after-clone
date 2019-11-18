@@ -76,13 +76,11 @@ create_ssh_key_pair()
 {
 	local keyPairType="$1"
 	
-	local program="$(type -p ssh-keygen)"
-	
-	if [ -z "$program" ]; then
+	if ! command -v ssh-keygen 1>/dev/null 2>/dev/null; then
 		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as ssh-keygen is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
 		return 0
 	fi
-	
+
 	case "$keyPairType" in
 		
 		dsa)
@@ -106,11 +104,11 @@ create_ssh_key_pair()
 	IFS=
 	
 	set +e
-		ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for example machine" -f machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
+		ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
 	set -e
 	
 	if [ $? -ne 0 ]; then
-		printf '%s\n' "Could not generate a $keyPairType host key pair for the example machine using ssh-keygen; please create it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
+		printf '%s\n' "Could not generate a $keyPairType host key pair for the sample-configuration 'example' machine using 'ssh-keygen'; please create it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
 	fi
 }
 
@@ -118,6 +116,12 @@ run_after_clone_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 	
+	umask 7077
+	
+	create_ssh_key_pair 'ed25519'
+	create_ssh_key_pair 'rsa'
+	create_ssh_key_pair 'ecdsa'
+
 	git submodule update --init --recursive
 	
 	cd "packages" 1>/dev/null 2>/dev/null
@@ -125,12 +129,6 @@ run_after_clone_main()
 		./checkout-submodules-to-master
 	
 	cd - 1>/dev/null 2>/dev/null
-	
-	umask 7077
-	
-	create_ssh_key_pair 'ed25519'
-	create_ssh_key_pair 'rsa'
-	create_ssh_key_pair 'ecdsa'
 }
 
 run_after_clone_main "$@"

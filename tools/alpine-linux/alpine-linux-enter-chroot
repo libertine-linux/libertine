@@ -134,49 +134,15 @@ alpine_linux_enter_chroot()
 	local environment_parseCommandLineArguments_message="${program_name} Enters an Alpine Linux chroot.
 
 Usage: ${program_name} -h | --help
-Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder] [-d|--data /path/to/chroot/data/folder]
+Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder]
 
-If the configuration folder path is not provided, it defaults to program_location/configuration.
+If the configuration folder path is not provided, it defaults to program_location/sample-configuration.
 
 If the output folder path is not provided, it defaults to program_location/output. The output folder path is created as necessary.
-
-If the chroot data folder path is not provided, it defaults to program_location/data.
 "
 	_additionalArgumentsCallback()
 	{
-		case "$key" in
-
-			-d|--data)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
-				environment_parseCommandLineArguments_missingArgument "$@"
-				alpine_linux_dataFolderPath="$value"
-				alpine_linux_dataFolderPathParsed=true
-
-				_additionalArgumentsCallback_shiftUp=1
-			;;
-
-			--data=*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
-				alpine_linux_dataFolderPath="${key##--data=}"
-				alpine_linux_dataFolderPathParsed=true
-
-				_additionalArgumentsCallback_shiftUp=0
-
-			;;
-
-			-d*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_dataFolderPathParsed
-				alpine_linux_dataFolderPath="${key##-o}"
-				alpine_linux_dataFolderPathParsed=true
-
-				_additionalArgumentsCallback_shiftUp=0
-			;;
-
-			*)
-				environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
-			;;
-
-		esac
+			environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
 	}
 	_positionalArgumentsCallback()
 	{
@@ -185,32 +151,11 @@ If the chroot data folder path is not provided, it defaults to program_location/
 		fi
 	}
 	local alpine_linux_positionalArgumentsStartAt
-	local alpine_linux_configurationFolderPath
-	local alpine_linux_outputFolderPath
-	local alpine_linux_dataFolderPath
-	local alpine_linux_dataFolderPathParsed
+	local alpine_linux_configurationFolderPath="$(pwd)"/sample-configuration
+	local alpine_linux_outputFolderPath="$(pwd)"/output
 	alpine_linux_parseCommandLineArguments _additionalArgumentsCallback _positionalArgumentsCallback "$@"
 	
 	alpine_linux_validateCommandLineArguments
-	
-	if [ -z "$alpine_linux_dataFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path is empty"
-	fi
-	if [ ! -e "$alpine_linux_dataFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' does not exist"
-	fi
-	if [ ! -r "$alpine_linux_dataFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not readable"
-	fi
-	if [ ! -d "$alpine_linux_dataFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not a directory"
-	fi
-	if [ ! -x "$alpine_linux_dataFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--data folder path '$alpine_linux_dataFolderPath' is not searchable"
-	fi
-	local absoluteFolderPath
-	environment_makeFolderPathAbsolute "$alpine_linux_dataFolderPath"
-	alpine_linux_dataFolderPath="$absoluteFolderPath"
 
 	local alpine_linux_temporaryFolderPath
 	local alpine_linux_versionFilePath

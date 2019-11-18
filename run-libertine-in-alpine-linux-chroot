@@ -125,6 +125,12 @@ depends()
 
 run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 {
+	local run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=false
+	local run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=false
+	local run_libertine_in_alpine_linux_chroot_machineNameParsed=false
+	local run_libertine_in_alpine_linux_chroot_verboseParsed=false
+	local run_libertine_in_alpine_linux_chroot_debugParsed=false
+
 	# Parse non-positional arguments.
 	local key
 	local value
@@ -134,69 +140,103 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 
 		case "$key" in
 
-			--)
-				run_libertine_in_alpine_linux_chroot_positionalArgumentsStartAt=$((run_libertine_in_alpine_linux_chroot_positionalArgumentsStartAt + 1))
-				shift 1
-				break
-			;;
-
 			-h|--help|-h*)
 				local EXIT_SUCCESS=0
 				environment_parseCommandLineArguments_printHelp $EXIT_SUCCESS
 			;;
 
 			-c|--configuration)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_configurationFolderPathParsed
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed
 				environment_parseCommandLineArguments_missingArgument "$@"
-				alpine_linux_configurationFolderPath="$value"
-				alpine_linux_configurationFolderPathParsed=true
+				run_libertine_in_alpine_linux_chroot_configurationFolderPath="$value"
+				run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=true
 
-				alpine_linux_positionalArgumentsStartAt=$((alpine_linux_positionalArgumentsStartAt + 1))
 				shift 1
 			;;
 
 			--configuration=*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_configurationFolderPathParsed
-				alpine_linux_configurationFolderPath="${key##--configuration=}"
-				alpine_linux_configurationFolderPathParsed=true
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed
+				run_libertine_in_alpine_linux_chroot_configurationFolderPath="${key##--configuration=}"
+				run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=true
 			;;
 
 			-c*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_configurationFolderPathParsed
-				alpine_linux_configurationFolderPath="${key##-c}"
-				alpine_linux_configurationFolderPathParsed=true
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed
+				run_libertine_in_alpine_linux_chroot_configurationFolderPath="${key##-c}"
+				run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=true
 			;;
 
-			-o|--output)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_outputFolderPathParsed
+			-r|--chroot)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
 				environment_parseCommandLineArguments_missingArgument "$@"
-				alpine_linux_outputFolderPath="$value"
-				alpine_linux_outputFolderPathParsed=true
+				run_libertine_in_alpine_linux_chroot_outputFolderPath="$value"
+				run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=true
 
-				alpine_linux_positionalArgumentsStartAt=$((alpine_linux_positionalArgumentsStartAt + 1))
 				shift 1
 			;;
 
-			--output=*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_outputFolderPathParsed
-				alpine_linux_outputFolderPath="${key##--output=}"
-				alpine_linux_outputFolderPathParsed=true
+			--chroot=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
+				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##--chroot=}"
+				run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=true
 
 			;;
 
-			-o*)
-				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_outputFolderPathParsed
-				alpine_linux_outputFolderPath="${key##-o}"
-				alpine_linux_outputFolderPathParsed=true
+			-r*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
+				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##-r}"
+				run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=true
+			;;
+
+			-m|--machine)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_machineNameParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				run_libertine_in_alpine_linux_chroot_machineNamee="$value"
+				run_libertine_in_alpine_linux_chroot_machineNameParsed=true
+
+				shift 1
+			;;
+
+			--machine=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_machineNameParsed
+				run_libertine_in_alpine_linux_chroot_machineName="${key##--machine=}"
+				run_libertine_in_alpine_linux_chroot_machineNameParsed=true
+			;;
+
+			-m*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_machineNameParsed
+				run_libertine_in_alpine_linux_chroot_machineName="${key##-m}"
+				run_libertine_in_alpine_linux_chroot_machineNameParsed=true
+			;;
+
+			-v|--verbose)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				run_libertine_in_alpine_linux_chroot_verbose="$value"
+				run_libertine_in_alpine_linux_chroot_verboseParsed=true
+
+				shift 1
+			;;
+
+			--verbose=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
+				run_libertine_in_alpine_linux_chroot_verbose="${key##--verbose=}"
+				run_libertine_in_alpine_linux_chroot_verboseParsed=true
+			;;
+
+			-v*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
+				run_libertine_in_alpine_linux_chroot_verbose="${key##-v}"
+				run_libertine_in_alpine_linux_chroot_verboseParsed=true
+			;;
+
+			-d|--debug)
+				run_libertine_in_alpine_linux_chroot_debug=true
+				run_libertine_in_alpine_linux_chroot_debugParsed=true
 			;;
 
 			-*)
-				local _additionalArgumentsCallback_shiftUp
-				$additionalArgumentsCallback "$@"
-				if [ $_additionalArgumentsCallback_shiftUp -gt 0 ]; then
-					alpine_linux_positionalArgumentsStartAt=$((alpine_linux_positionalArgumentsStartAt + _additionalArgumentsCallback_shiftUp))
-					shift $_additionalArgumentsCallback_shiftUp
-				fi
+				environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
 			;;
 
 			*)
@@ -205,15 +245,76 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 
 		esac
 
-		alpine_linux_positionalArgumentsStartAt=$((alpine_linux_positionalArgumentsStartAt + 1))
 		shift 1
 
 	done
 
 	# Parse positional arguments.
-	$positionalArgumentsCallback
+	if [ $# -ne 0 ]; then
+		environment_parseCommandLineArguments_errorHelp "No positional arguments are accepted"
+	fi
 }
 
+depends mkdir
+run_libertine_in_alpine_linux_chroot_validateCommandLineArguments()
+{
+	local absoluteFolderPath
+
+	if [ -z "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--configuration folder path is empty"
+	fi
+	environment_makeFolderPathAbsolute "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"
+	run_libertine_in_alpine_linux_chroot_configurationFolderPath="$absoluteFolderPath"
+	if [ ! -e "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_alpine_linux_chroot_configurationFolderPath' is not readable"
+	fi
+	if [ ! -r "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_alpine_linux_chroot_configurationFolderPath' is not readable"
+	fi
+	if [ ! -d "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_alpine_linux_chroot_configurationFolderPath' is not a directory"
+	fi
+	if [ ! -x "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_alpine_linux_chroot_configurationFolderPath' is not searchable"
+	fi
+
+	if [ -z "$run_libertine_in_alpine_linux_chroot_outputFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--output folder path is empty"
+	fi
+	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
+	environment_makeFolderPathAbsolute "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
+	run_libertine_in_alpine_linux_chroot_outputFolderPath="$absoluteFolderPath"
+	if [ ! -r "$run_libertine_in_alpine_linux_chroot_outputFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_alpine_linux_chroot_outputFolderPath' is not readable"
+	fi
+	if [ ! -d "$run_libertine_in_alpine_linux_chroot_outputFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_alpine_linux_chroot_outputFolderPath' is not a directory"
+	fi
+	if [ ! -x "$run_libertine_in_alpine_linux_chroot_outputFolderPath" ]; then
+		_run_libertine_in_alpine_linux_chroot_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_alpine_linux_chroot_outputFolderPath' is not searchable"
+	fi
+}
+
+depends mkdir
+run_libertine_in_alpine_linux_chroot_prepare()
+{
+	run_libertine_in_alpine_linux_chroot_chrootFolderPath="$run_libertine_in_alpine_linux_chroot_outputFolderPath"/chroot
+	run_libertine_in_alpine_linux_chroot_chrootMountFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/mount
+	run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/configuration
+	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+}
+
+depends id sudo
+run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired()
+{
+	local currentUserIdentifier="$(id -u)"
+	if [ "$currentUserIdentifier" -ne 0 ]; then
+		exec sudo -p "Enter your password to run as root: " "$0" "$@"
+	fi
+}
+
+depends mkdir
 run_libertine_in_alpine_linux_chroot_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
@@ -223,18 +324,52 @@ run_libertine_in_alpine_linux_chroot_main()
 	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
 
 Usage: ${program_name} -h | --help
-Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder]
+Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--ouput /path/to/output/folder] [-m|--machine name]
 
-If the configuration folder path is not provided, it defaults to program_location/configuration.
+If the configuration folder path is not provided, it defaults to program_location/sample-configuration.
 
-If the output folder path is not provided, it defaults to program_location/output. The output folder path is created as necessary.
+If the output folder path is not provided, it defaults to program_location/chroot. The output folder path is created as necessary.
+
+If the machine name is not provided, it defaults to example.
 "
-	local run_libertine_in_alpine_linux_chroot_positionalArgumentsStartAt=0
-
-
-# TODO: Parse our arguments, if any, then pass positional arguments to libertine after bind-mounting
-
+	local run_libertine_in_alpine_linux_chroot_configurationFolderPath="$(pwd)"/sample-configuration
+	local run_libertine_in_alpine_linux_chroot_outputFolderPath="$(pwd)"/output
+	local run_libertine_in_alpine_linux_chroot_machineName='example'
+	local run_libertine_in_alpine_linux_chroot_verbose=''
+	local run_libertine_in_alpine_linux_chroot_debug=false
 	run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments "$@"
+
+	run_libertine_in_alpine_linux_chroot_validateCommandLineArguments
+
+	local run_libertine_in_alpine_linux_chroot_chrootFolderPath
+	local run_libertine_in_alpine_linux_chroot_chrootMountFolderPath
+	local run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath
+	run_libertine_in_alpine_linux_chroot_prepare
+
+	run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired
+
+	set +e
+		mount --bind "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+		mount --bind "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+
+		set -- \
+			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux --output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
+			-- mount/libertine \
+			--machine "$run_libertine_in_alpine_linux_chroot_machineName" --machines-path /configuration/machines --authority-path /configuration/certificate-authority --configuration /configuration/alpine-linux.x86_64.libertine.config
+		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
+			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
+		fi
+		if $run_libertine_in_alpine_linux_chroot_debug; then
+			set -- "$@" --debug
+		fi
+		tools/alpine-linux/alpine-linux-enter-chroot "$@"
+		local exitCode=$?
+
+		umount "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+		umount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+	set -e
+
+	exit $exitCode
 }
 
 run_libertine_in_alpine_linux_chroot_main "$@"
