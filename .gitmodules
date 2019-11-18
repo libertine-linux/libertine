@@ -9,6 +9,11 @@
 [submodule "etc/shellfire/paths.d"]
 	path = etc/shellfire/paths.d
 	url = https://github.com/shellfire-dev/paths.d
+	branch = master
+	update = checkout
+	ignore = none
+	fetchRecurseSubmodules = true
+	shallow = false
 [submodule "lib/shellfire/core"]
 	path = lib/shellfire/core
 	url = https://github.com/shellfire-dev/core.git
