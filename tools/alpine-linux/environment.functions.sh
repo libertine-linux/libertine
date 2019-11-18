@@ -38,6 +38,15 @@ environment_parseCommandLineArguments_missingArgument()
 	value="$2"
 }
 
+depends id sudo
+environment_reRunAsRootIfRequired()
+{
+	local currentUserIdentifier="$(id -u)"
+	if [ "$currentUserIdentifier" -ne 0 ]; then
+		exec sudo -p "Enter your password to run as root: " "$0" "$@"
+	fi
+}
+
 environment_makeFolderPathAbsolute()
 {
 	cd "$1" 1>/dev/null 2>/dev/null

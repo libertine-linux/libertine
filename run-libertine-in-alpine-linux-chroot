@@ -319,7 +319,7 @@ run_libertine_in_alpine_linux_chroot_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 
-	. tools/alpine-linux/environment-functions.sh
+	. tools/alpine-linux/environment.functions.sh
 
 	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
 
@@ -346,7 +346,7 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath
 	run_libertine_in_alpine_linux_chroot_prepare
 
-	run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired
+	environment_reRunAsRootIfRequired
 
 	set +e
 		mount --bind "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"

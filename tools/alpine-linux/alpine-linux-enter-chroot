@@ -184,13 +184,6 @@ If the output folder path is not provided, it defaults to program_location/outpu
 
 	local alpine_linux_chrootFolderPath="$alpine_linux_outputFolderPath"/chroot
 
-	# TODO: Prepare a chroot environment / or create a new disk (dd, sudo mount, fdisk, mkfs.ext4)
-	# Need to (a) copy in any additional content and (b) make sure we don't always blow it away and (c) --rbind /proc
-
-# TODO: run a binary other than /bin/sh
-# TODO: populate chroot with 'usr/local'
-# TODO: compile mrustc
-
 	cp -a "$alpine_linux_extractFolderPath"/ "$alpine_linux_chrootFolderPath"/
 	set +f
 		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
@@ -217,15 +210,17 @@ If the output folder path is not provided, it defaults to program_location/outpu
 		fail "Make sure '/sys' is a directory"
 	fi
 
+	environment_reRunAsRootIfRequired
+
 	cd "$alpine_linux_chrootFolderPath" 1>/dev/null 2>/dev/null
 
 		trap "" EXIT HUP INT QUIT TERM
 
 		set +e
 			# Exit code is 32 if already mounted.
-			sudo mount -t proc proc "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
-			sudo mount --rbind /sys "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
-			sudo mount --rbind /dev "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
+			mount -t proc proc "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
+			mount --rbind /sys "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
+			mount --rbind /dev "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
 
 
 			shift $alpine_linux_positionalArgumentsStartAt
@@ -234,9 +229,9 @@ If the output folder path is not provided, it defaults to program_location/outpu
 			
 
 			# Exit code is 32 if not mounted.
-			sudo umount "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
-			sudo umount "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
-			sudo umount "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
+			umount "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
+			umount "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
+			umount "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
 
 			if [ $exitCode -ne 0 ]; then
 				exit $exitCode
