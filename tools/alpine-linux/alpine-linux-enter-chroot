@@ -125,13 +125,127 @@ depends()
 	done
 }
 
+depends cp
+alpine_linux_enter_chroot_createChroot()
+{
+
+	cp -a "$alpine_linux_extractFolderPath"/ "$alpine_linux_chrootFolderPath"/
+	set +f
+		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
+	set -f
+
+	# Create basic folders.
+	local folder
+	for folder in dev etc home mnt proc root sys var var/run
+	do
+		mkdir -m 0700 -p "$alpine_linux_chrootFolderPath"/"$folder"
+	done
+
+	if [ ! -e /dev ]; then
+		fail "Make sure '/dev' exists"
+	fi
+	if [ ! -d /dev ]; then
+		fail "Make sure '/dev' is a directory"
+	fi
+
+	if [ ! -e /sys ]; then
+		fail "Make sure '/sys' exists"
+	fi
+	if [ ! -d /dev ]; then
+		fail "Make sure '/sys' is a directory"
+	fi	
+}
+
+depends mount
+environment_mountPseudoFileSystem()
+{
+	local pseudoType="$1"
+	local toFolderPath="$2"
+	mount -t "$pseudoType" "$pseudoType" "$toFolderPath" 
+}
+
+depends mount awk grep
+environment_recursivelyMount()
+{
+	local fromFolderPath="$1"
+	local toFolderPath="$2"
+
+	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
+	if [ $mountCount -gt 0 ]; then
+		return 0
+	fi
+
+	mount --rbind "$fromFolderPath" "$toFolderPath"
+	mount --make-rslave "$toFolderPath"
+}
+
+depends umount
+# environment_unmountPseudoFileSystem()
+# {
+# 	local toFolderPath="$1"
+# 	umount "toFolderPath"
+# }
+
+# depends umount
+# environment_recursivelyUnmount()
+# {
+# 	local toFolderPath="$1"
+# 	umount -R "toFolderPath"
+# }
+
+depends awk sort tr umount
+environment_recursivelyUnmountInChroot()
+{
+	local chrootFolderPath="$1"
+
+	local awkChrootFolderPath="$(printf '%s' "$chrootFolderPath" | sed 's;/;\\/;g')"
+
+	local IFS=' '
+	local mountFolderPath
+	for mountFolderPath in $(awk '$2 ~/^'"$awkChrootFolderPath"'/ {print $2}' /proc/mounts | sort -u -r | tr '\n' ' ')
+	do
+		umount -l "$mountFolderPath"
+	done
+}
+
+depends env chroot
+alpine_linux_enter_chroot_mountRunAndUnmount()
+{
+	cd "$alpine_linux_chrootFolderPath" 1>/dev/null 2>/dev/null
+
+		trap "" EXIT HUP INT QUIT TERM
+
+			environment_mountPseudoFileSystem proc "$alpine_linux_chrootFolderPath"/proc
+			cat /proc/mounts | grep proc
+			environment_recursivelyMount /sys "$alpine_linux_chrootFolderPath"/sys
+			environment_recursivelyMount /dev "$alpine_linux_chrootFolderPath"/dev
+
+			shift $alpine_linux_positionalArgumentsStartAt
+			set +e
+				env -i PATH='/usr/sbin:/sbin:/usr/bin:/bin' LOGNAME='root' USER='root' HOME='/root' LANG=C.UTF-8 LANGUAGE=en_US:en chroot . "$@"
+				local exitCode=$?
+			set -e
+			
+			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/dev
+			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/sys
+			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/proc
+
+			if [ $exitCode -ne 0 ]; then
+				exit $exitCode
+			fi
+
+		trap - EXIT HUP INT QUIT TERM
+
+	cd - 1>/dev/null 2>/dev/null
+}
+
 alpine_linux_enter_chroot()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 
 	. "$(pwd)"/alpine-linux.functions.sh
 
-	local environment_parseCommandLineArguments_message="${program_name} Enters an Alpine Linux chroot.
+	local environment_parseCommandLineArguments_message="${program_name}:  Enters an Alpine Linux chroot.
 
 Usage: ${program_name} -h | --help
 Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder]
@@ -184,64 +298,11 @@ If the output folder path is not provided, it defaults to program_location/outpu
 
 	local alpine_linux_chrootFolderPath="$alpine_linux_outputFolderPath"/chroot
 
-	cp -a "$alpine_linux_extractFolderPath"/ "$alpine_linux_chrootFolderPath"/
-	set +f
-		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
-	set -f
-
-	# Create basic folders.
-	local folder
-	for folder in dev etc mnt proc sys var var/run
-	do
-		mkdir -m 0700 -p "$alpine_linux_chrootFolderPath"/"$folder"
-	done
-
-	if [ ! -e /dev ]; then
-		fail "Make sure '/dev' exists"
-	fi
-	if [ ! -d /dev ]; then
-		fail "Make sure '/dev' is a directory"
-	fi
-
-	if [ ! -e /sys ]; then
-		fail "Make sure '/sys' exists"
-	fi
-	if [ ! -d /dev ]; then
-		fail "Make sure '/sys' is a directory"
-	fi
+	alpine_linux_enter_chroot_createChroot
 
 	environment_reRunAsRootIfRequired
 
-	cd "$alpine_linux_chrootFolderPath" 1>/dev/null 2>/dev/null
-
-		trap "" EXIT HUP INT QUIT TERM
-
-		set +e
-			# Exit code is 32 if already mounted.
-			mount -t proc proc "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
-			mount --rbind /sys "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
-			mount --rbind /dev "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
-
-
-			shift $alpine_linux_positionalArgumentsStartAt
-			sudo /usr/bin/env chroot . "$@"
-			local exitCode=$?
-			
-
-			# Exit code is 32 if not mounted.
-			umount "$alpine_linux_chrootFolderPath"/dev 2>/dev/null
-			umount "$alpine_linux_chrootFolderPath"/sys 2>/dev/null
-			umount "$alpine_linux_chrootFolderPath"/proc 2>/dev/null
-
-			if [ $exitCode -ne 0 ]; then
-				exit $exitCode
-			fi
-		set -e
-
-		trap - EXIT HUP INT QUIT TERM
-
-	cd - 1>/dev/null 2>/dev/null
-
+	alpine_linux_enter_chroot_mountRunAndUnmount "$@"
 }
 
 alpine_linux_enter_chroot "$@"

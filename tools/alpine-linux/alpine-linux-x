@@ -723,7 +723,7 @@ alpine_linux_x_main()
 
 	. "$(pwd)"/alpine-linux.functions.sh
 
-	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
+	local environment_parseCommandLineArguments_message="${program_name}:  Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
 
 Usage: ${program_name} -h | --help
 Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder]

@@ -104,7 +104,7 @@ alpine_linux_parseCommandLineArguments()
 	done
 
 	# Parse positional arguments.
-	$positionalArgumentsCallback
+	$positionalArgumentsCallback "$@"
 }
 
 depends mkdir
