@@ -318,18 +318,10 @@ run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired()
 
 run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 {
-	set -x
 	trap "" EXIT HUP INT QUIT TERM
 
 		environment_bindMount "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
-
-		echo "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
-		ls -la "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"/libertine
-		
-				
 		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
-echo "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
-		ls -la "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
 
 		set -- \
 			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux --output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
@@ -341,7 +333,6 @@ echo "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
 		if $run_libertine_in_alpine_linux_chroot_debug; then
 			set -- "$@" --debug
 		fi
-		set -x
 		tools/alpine-linux/alpine-linux-enter-chroot "$@"
 		local exitCode=$?
 
