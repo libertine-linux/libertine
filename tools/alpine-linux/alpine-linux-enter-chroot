@@ -125,11 +125,10 @@ depends()
 	done
 }
 
-depends cp
+depends cp rm mkdir
 alpine_linux_enter_chroot_createChroot()
 {
-
-	cp -a "$alpine_linux_extractFolderPath"/ "$alpine_linux_chrootFolderPath"/
+	cp -a "$alpine_linux_extractFolderPath"/. "$alpine_linux_chrootFolderPath"/
 	set +f
 		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
 	set -f
@@ -156,58 +155,6 @@ alpine_linux_enter_chroot_createChroot()
 	fi	
 }
 
-depends mount
-environment_mountPseudoFileSystem()
-{
-	local pseudoType="$1"
-	local toFolderPath="$2"
-	mount -t "$pseudoType" "$pseudoType" "$toFolderPath" 
-}
-
-depends mount awk grep
-environment_recursivelyMount()
-{
-	local fromFolderPath="$1"
-	local toFolderPath="$2"
-
-	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
-	if [ $mountCount -gt 0 ]; then
-		return 0
-	fi
-
-	mount --rbind "$fromFolderPath" "$toFolderPath"
-	mount --make-rslave "$toFolderPath"
-}
-
-depends umount
-# environment_unmountPseudoFileSystem()
-# {
-# 	local toFolderPath="$1"
-# 	umount "toFolderPath"
-# }
-
-# depends umount
-# environment_recursivelyUnmount()
-# {
-# 	local toFolderPath="$1"
-# 	umount -R "toFolderPath"
-# }
-
-depends awk sort tr umount
-environment_recursivelyUnmountInChroot()
-{
-	local chrootFolderPath="$1"
-
-	local awkChrootFolderPath="$(printf '%s' "$chrootFolderPath" | sed 's;/;\\/;g')"
-
-	local IFS=' '
-	local mountFolderPath
-	for mountFolderPath in $(awk '$2 ~/^'"$awkChrootFolderPath"'/ {print $2}' /proc/mounts | sort -u -r | tr '\n' ' ')
-	do
-		umount -l "$mountFolderPath"
-	done
-}
-
 depends env chroot
 alpine_linux_enter_chroot_mountRunAndUnmount()
 {
@@ -216,7 +163,6 @@ alpine_linux_enter_chroot_mountRunAndUnmount()
 		trap "" EXIT HUP INT QUIT TERM
 
 			environment_mountPseudoFileSystem proc "$alpine_linux_chrootFolderPath"/proc
-			cat /proc/mounts | grep proc
 			environment_recursivelyMount /sys "$alpine_linux_chrootFolderPath"/sys
 			environment_recursivelyMount /dev "$alpine_linux_chrootFolderPath"/dev
 
@@ -225,7 +171,7 @@ alpine_linux_enter_chroot_mountRunAndUnmount()
 				env -i PATH='/usr/sbin:/sbin:/usr/bin:/bin' LOGNAME='root' USER='root' HOME='/root' LANG=C.UTF-8 LANGUAGE=en_US:en chroot . "$@"
 				local exitCode=$?
 			set -e
-			
+
 			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/dev
 			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/sys
 			environment_recursivelyUnmountInChroot "$alpine_linux_chrootFolderPath"/proc

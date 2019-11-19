@@ -5,4 +5,4 @@
 # Ignore Mac OS X non-native filesystem files
 ._*
 
-chroot/
+output/

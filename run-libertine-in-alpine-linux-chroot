@@ -299,9 +299,11 @@ depends mkdir
 run_libertine_in_alpine_linux_chroot_prepare()
 {
 	run_libertine_in_alpine_linux_chroot_chrootFolderPath="$run_libertine_in_alpine_linux_chroot_outputFolderPath"/chroot
+
 	run_libertine_in_alpine_linux_chroot_chrootMountFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/mount
-	run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/configuration
 	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+
+	run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/configuration
 	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
 }
 
@@ -312,6 +314,45 @@ run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired()
 	if [ "$currentUserIdentifier" -ne 0 ]; then
 		exec sudo -p "Enter your password to run as root: " "$0" "$@"
 	fi
+}
+
+run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
+{
+	set -x
+	trap "" EXIT HUP INT QUIT TERM
+
+		environment_bindMount "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+
+		echo "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+		ls -la "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"/libertine
+		
+				
+		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+echo "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+		ls -la "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+
+		set -- \
+			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux --output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
+			-- /mount/libertine \
+			--machine "$run_libertine_in_alpine_linux_chroot_machineName" --machines-path /configuration/machines --authority-path /configuration/certificate-authority --configuration /configuration/alpine-linux.x86_64.libertine.config
+		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
+			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
+		fi
+		if $run_libertine_in_alpine_linux_chroot_debug; then
+			set -- "$@" --debug
+		fi
+		set -x
+		tools/alpine-linux/alpine-linux-enter-chroot "$@"
+		local exitCode=$?
+
+		environment_recursivelyUnmountInChroot "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+		environment_recursivelyUnmountInChroot "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
+
+		if [ $exitCode -ne 0 ]; then
+			exit $exitCode
+		fi
+
+	trap - EXIT HUP INT QUIT TERM
 }
 
 depends mkdir
@@ -348,28 +389,7 @@ If the machine name is not provided, it defaults to example.
 
 	environment_reRunAsRootIfRequired
 
-	set +e
-		mount --bind "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
-		mount --bind "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
-
-		set -- \
-			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux --output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
-			-- /mount/libertine \
-			--machine "$run_libertine_in_alpine_linux_chroot_machineName" --machines-path /configuration/machines --authority-path /configuration/certificate-authority --configuration /configuration/alpine-linux.x86_64.libertine.config
-		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
-			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
-		fi
-		if $run_libertine_in_alpine_linux_chroot_debug; then
-			set -- "$@" --debug
-		fi
-		tools/alpine-linux/alpine-linux-enter-chroot "$@"
-		local exitCode=$?
-
-		umount "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
-		umount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
-	set -e
-
-	exit $exitCode
+	run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount
 }
 
 run_libertine_in_alpine_linux_chroot_main "$@"

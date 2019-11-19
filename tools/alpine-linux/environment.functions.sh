@@ -47,6 +47,60 @@ environment_reRunAsRootIfRequired()
 	fi
 }
 
+depends mount
+environment_mountPseudoFileSystem()
+{
+	local pseudoType="$1"
+	local toFolderPath="$2"
+	mount -t "$pseudoType" "$pseudoType" "$toFolderPath" 
+}
+
+depends mount awk grep
+environment_bindMount()
+{
+	local fromFolderPath="$1"
+	local toFolderPath="$2"
+
+	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
+	if [ $mountCount -gt 0 ]; then
+		return 0
+	fi
+
+	mount --bind "$fromFolderPath" "$toFolderPath"
+	mount -o remount,bind,ro "$fromFolderPath" "$toFolderPath"
+	mount --make-slave "$toFolderPath"
+}
+
+depends mount awk grep
+environment_recursivelyMount()
+{
+	local fromFolderPath="$1"
+	local toFolderPath="$2"
+
+	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
+	if [ $mountCount -gt 0 ]; then
+		return 0
+	fi
+
+	mount --rbind "$fromFolderPath" "$toFolderPath"
+	mount --make-rslave "$toFolderPath"
+}
+
+depends awk sort tr umount
+environment_recursivelyUnmountInChroot()
+{
+	local chrootFolderPath="$1"
+
+	local awkChrootFolderPath="$(printf '%s' "$chrootFolderPath" | sed 's;/;\\/;g')"
+
+	local IFS=' '
+	local mountFolderPath
+	for mountFolderPath in $(awk '$2 ~/^'"$awkChrootFolderPath"'/ {print $2}' /proc/mounts | sort -u -r | tr '\n' ' ')
+	do
+		umount -l "$mountFolderPath"
+	done
+}
+
 environment_makeFolderPathAbsolute()
 {
 	cd "$1" 1>/dev/null 2>/dev/null
