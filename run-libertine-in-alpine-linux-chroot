@@ -384,6 +384,10 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath
 	run_libertine_in_alpine_linux_chroot_prepare
 
+	tools/alpine-linux/alpine-linux-x \
+		--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
+		--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
+
 	environment_reRunAsRootIfRequired
 
 	run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount
