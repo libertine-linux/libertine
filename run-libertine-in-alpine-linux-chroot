@@ -324,9 +324,15 @@ run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
 
 		set -- \
-			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux --output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
-			-- /mount/libertine \
-			--machine "$run_libertine_in_alpine_linux_chroot_machineName" --machines-path /configuration/machines --authority-path /configuration/certificate-authority --configuration /configuration/alpine-linux.x86_64.libertine.config
+			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
+			--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
+			-- \
+				/mount/libertine \
+				--machine "$run_libertine_in_alpine_linux_chroot_machineName" \
+				--machines-path /configuration/machines \
+				--authority-path /configuration/certificate-authority \
+				--configuration /configuration/alpine-linux.x86_64.libertine.config \
+				--output /output
 		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
 			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
 		fi

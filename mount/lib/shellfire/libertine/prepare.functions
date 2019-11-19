@@ -38,8 +38,8 @@ libertine_prepare_setEssentialGlobalVariables()
 	libertine_certificateAuthorityCertificateFilePath="$libertine_certificateAuthorityFolderPath"/certificates/"$libertine_certificateAuthorityBaseName".certificate.pem
 	libertine_certificateAuthorityPrivateKeyFilePath="$libertine_certificateAuthorityFolderPath"/private/"$libertine_certificateAuthorityBaseName".private-key.pem
 		
-	libertine_machinesOutputFolderPath="$_program_path"/output
-	
+	libertine_machinesOutputFolderPath="$libertine_outputPath"
+		
 	mkdir -m 0700 -p "$libertine_machinesOutputFolderPath"
 }
 

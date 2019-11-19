@@ -135,24 +135,10 @@ alpine_linux_enter_chroot_createChroot()
 
 	# Create basic folders.
 	local folder
-	for folder in dev etc home mnt proc root sys var var/run
+	for folder in dev etc home mnt opt proc root run sys tmp usr/local usr/local/bin usr/local/sbin var var/cache var/run var/tmp
 	do
 		mkdir -m 0700 -p "$alpine_linux_chrootFolderPath"/"$folder"
 	done
-
-	if [ ! -e /dev ]; then
-		fail "Make sure '/dev' exists"
-	fi
-	if [ ! -d /dev ]; then
-		fail "Make sure '/dev' is a directory"
-	fi
-
-	if [ ! -e /sys ]; then
-		fail "Make sure '/sys' exists"
-	fi
-	if [ ! -d /dev ]; then
-		fail "Make sure '/sys' is a directory"
-	fi	
 }
 
 depends env chroot

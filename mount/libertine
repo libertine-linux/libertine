@@ -136,6 +136,7 @@ _program_commandLine_parseInitialise()
 	_program_default_machine='example'
 	_program_default_machinesPath="$_program_path"/machines
 	_program_default_authorityPath="$_program_path"/certificate-authority
+	_program_default_outputPath="$_program_path"/output
 	_program_default_makeDebug=false
 	_program_default_configuration="$_program_etcPath"/shellfire/libertine/libertine.config
 }
@@ -150,13 +151,15 @@ _program_commandLine_helpMessage()
   -a, --authority-path PATH  PATH to certificate authority folder. Defaults to ${_program_default_authorityPath}
                              Must contain a file called `libertine.openssl.cnf` and be writable.
   -d, --make-debug           Forces make to run serially. Defaults to off.
-  -c, --configuration FILE   Path to FILE containing build machine configuration. Defaults to ${_program_default_configuration}"
+  -c, --configuration FILE   Path to FILE containing build machine configuration. Defaults to ${_program_default_configuration}
+  -o, --output PATH          PATH to output folder. Default to ${_program_default_outputPath}"
     _program_commandLine_helpMessage_optionsSpacing='   '
 	_program_commandLine_helpMessage_configurationKeys="
   libertine_machine        Equivalent to --machine
   libertine_machinesPath   Equivalent to --machines-path
   libertine_authorityPath  Equivalent to --authority-path
   libertine_makeDebug      Equivalent to --make-debug (if =true)
+  libertine_outputPath     Equivalent to --output
 "
 	_program_commandLine_helpMessage_examples="
   ${_program_name} -- root=/dev/vda
@@ -184,6 +187,10 @@ _program_commandLine_optionExists()
 		;;
 		
 		c|configuration)
+			echo 'yes-argumented'
+		;;
+		
+		o|output)
 			echo 'yes-argumented'
 		;;
 		
@@ -228,6 +235,11 @@ _program_commandLine_processOptionWithArgument()
 			libertine_configuration="$optionValue"
 		;;
 		
+		o|output)
+			core_validate_filePathReadable $core_commandLine_exitCode_USAGE 'option' "$optionNameIncludingHyphens" "$optionValue"
+			libertine_outputPath="$optionValue"
+		;;
+		
 	esac
 }
 
@@ -267,6 +279,12 @@ _program_commandLine_validate()
 		libertine_configuration="$_program_default_configuration"
 	else
 		core_validate_filePathReadable $core_commandLine_exitCode_CONFIG 'configuration setting' 'libertine_configuration' "$libertine_configuration"
+	fi
+	
+	if core_variable_isUnset libertine_outputPath; then
+		libertine_outputPath="$_program_default_outputPath"
+	else
+		core_validate_filePathReadable $core_commandLine_exitCode_CONFIG 'configuration setting' 'libertine_outputPath' "$libertine_outputPath"
 	fi
 }
 
