@@ -25,6 +25,7 @@ grep	/usr/bin
 gunzip	/usr/bin
 head	/usr/bin
 hexdump	/usr/bin
+id	/usr/bin
 install	/usr/bin
 ln	/usr/bin
 ls	/usr/bin
@@ -32,6 +33,7 @@ md5sum	/usr/bin
 mkdir	/usr/bin
 mkfifo	/usr/bin
 mknod	/usr/bin
+mktemp	/usr/bin
 mv	/usr/bin
 od	/usr/bin
 paste	/usr/bin
