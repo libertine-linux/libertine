@@ -149,7 +149,7 @@ _program_commandLine_helpMessage()
   -m, --machine NAME         Defaults to ${_program_default_machine}.
   -p, --machines-path PATH   PATH to parent folder of machine. Defaults to ${_program_default_machinesPath}
   -a, --authority-path PATH  PATH to certificate authority folder. Defaults to ${_program_default_authorityPath}
-                             Must contain a file called `libertine.openssl.cnf` and be writable.
+                             Must contain a file called 'libertine.openssl.cnf' and be writable.
   -d, --make-debug           Forces make to run serially. Defaults to off.
   -c, --configuration FILE   Path to FILE containing build machine configuration. Defaults to ${_program_default_configuration}
   -o, --output PATH          PATH to output folder. Default to ${_program_default_outputPath}"
@@ -236,7 +236,7 @@ _program_commandLine_processOptionWithArgument()
 		;;
 		
 		o|output)
-			core_validate_filePathReadable $core_commandLine_exitCode_USAGE 'option' "$optionNameIncludingHyphens" "$optionValue"
+			core_validate_folderPathIsReadableAndSearchableAndWritableOrCanBeCreated $core_commandLine_exitCode_USAGE 'option' "$optionNameIncludingHyphens" "$optionValue"
 			libertine_outputPath="$optionValue"
 		;;
 		
@@ -284,7 +284,7 @@ _program_commandLine_validate()
 	if core_variable_isUnset libertine_outputPath; then
 		libertine_outputPath="$_program_default_outputPath"
 	else
-		core_validate_filePathReadable $core_commandLine_exitCode_CONFIG 'configuration setting' 'libertine_outputPath' "$libertine_outputPath"
+		core_validate_folderPathIsReadableAndSearchableAndWritableOrCanBeCreated $core_commandLine_exitCode_CONFIG 'configuration setting' 'libertine_outputPath' "$libertine_outputPath"
 	fi
 }
 

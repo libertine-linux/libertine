@@ -332,7 +332,7 @@ run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 				--machines-path /configuration/machines \
 				--authority-path /configuration/certificate-authority \
 				--configuration /configuration/alpine-linux.x86_64.libertine.config \
-				--output /output
+				--output ./output
 		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
 			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
 		fi
