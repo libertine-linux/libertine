@@ -1,12 +1,4 @@
-[submodule "sample-configuration/packages"]
-	path = sample-configuration/packages
-	url = https://github.com/libertine-linux/packages.git
-	branch = master
-	update = checkout
-	ignore = none
-	fetchRecurseSubmodules = true
-	shallow = false
-[submodule "etc/shellfire/paths.d"]
+[submodule "mount/etc/shellfire/paths.d"]
 	path = mount/etc/shellfire/paths.d
 	url = https://github.com/shellfire-dev/paths.d
 	branch = master
@@ -14,7 +6,7 @@
 	ignore = none
 	fetchRecurseSubmodules = true
 	shallow = false
-[submodule "lib/shellfire/core"]
+[submodule "mount/lib/shellfire/core"]
 	path = mount/lib/shellfire/core
 	url = https://github.com/shellfire-dev/core.git
 	branch = master
@@ -22,15 +14,9 @@
 	ignore = none
 	fetchRecurseSubmodules = true
 	shallow = false
-[submodule "lib/shellfire/cpucount"]
+[submodule "mount/lib/shellfire/cpucount"]
 	path = mount/lib/shellfire/cpucount
 	url = https://github.com/shellfire-dev/cpucount.git
-	branch = master
-	update = checkout
-	ignore = none
-	fetchRecurseSubmodules = true
-	shallow = false
-[submodule "etc/shellfire/paths"]
 	branch = master
 	update = checkout
 	ignore = none

@@ -71,8 +71,7 @@ _program_path_find()
 	fi
 }
 
-# If we have a build_openssh then we can do this as run time
-create_ssh_key_pair()
+run_after_clone_createSshKeyPair()
 {
 	local keyPairType="$1"
 	
@@ -115,20 +114,21 @@ create_ssh_key_pair()
 run_after_clone_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
-	
-	umask 7077
-	
-	create_ssh_key_pair 'ed25519'
-	create_ssh_key_pair 'rsa'
-	create_ssh_key_pair 'ecdsa'
 
 	git submodule update --init --recursive
 	
-	cd "packages" 1>/dev/null 2>/dev/null
+	git -C sample-configuration clone --depth 1 --recurse-submodules https://github.com/libertine-linux/packages
+
+	cd sample-configuration/packages 1>/dev/null 2>/dev/null
 	
 		./checkout-submodules-to-master
 	
 	cd - 1>/dev/null 2>/dev/null
+
+	umask 7077
+	run_after_clone_createSshKeyPair 'ed25519'
+	run_after_clone_createSshKeyPair 'rsa'
+	run_after_clone_createSshKeyPair 'ecdsa'
 }
 
 run_after_clone_main "$@"
