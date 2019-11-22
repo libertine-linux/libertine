@@ -126,12 +126,12 @@ depends()
 	done
 }
 
-run_after_clone_createSshKeyPair()
+prepare_sample_configuration_createSshKeyPair()
 {
 	local keyPairType="$1"
 	
 	if ! command -v ssh-keygen 1>/dev/null 2>/dev/null; then
-		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as ssh-keygen is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
+		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as 'ssh-keygen' is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
 		return 0
 	fi
 
@@ -139,6 +139,10 @@ run_after_clone_createSshKeyPair()
 		
 		dsa)
 			set -- -b 1024
+		;;
+
+		rsa)
+			set -- -b 4096
 		;;
 		
 		ecdsa)
@@ -149,16 +153,17 @@ run_after_clone_createSshKeyPair()
 			set --
 		;;
 		
-		rsa)
-			set -- -b 4096
-		;;
-		
 	esac
-	
-	IFS=
-	
+
+	local keyFilePath=sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
+
+	if [ -s "$keyFilePath" ]; then
+		return 0
+	fi
+
+	umask 7077
 	set +e
-		ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
+		IFS= ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f "$sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key
 	set -e
 	
 	if [ $? -ne 0 ]; then
@@ -167,22 +172,17 @@ run_after_clone_createSshKeyPair()
 }
 
 depends git
-run_after_clone_main()
+prepare_sample_configuration_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 	
-	git -C sample-configuration clone --depth 1 --recurse-submodules https://github.com/libertine-linux/packages
+	if [ ! -d sample-configuration/packages/.git ]; then
+		git -C sample-configuration clone --depth 1 --recurse-submodules https://github.com/libertine-linux/packages
+	fi
 
-	cd sample-configuration/packages 1>/dev/null 2>/dev/null
-	
-		./checkout-submodules-to-master
-	
-	cd - 1>/dev/null 2>/dev/null
+	sample-configuration/packages/checkout-submodules-to-master
 
-	umask 7077
-	run_after_clone_createSshKeyPair 'ed25519'
-	run_after_clone_createSshKeyPair 'rsa'
-	run_after_clone_createSshKeyPair 'ecdsa'
+	prepare_sample_configuration_createSshKeyPair 'ed25519'
 }
 
-run_after_clone_main "$@"
+prepare_sample_configuration_main "$@"
