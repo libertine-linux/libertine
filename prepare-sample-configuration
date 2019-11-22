@@ -163,7 +163,7 @@ prepare_sample_configuration_createSshKeyPair()
 
 	umask 7077
 	set +e
-		IFS= ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f "$sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key
+		IFS= ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f "$keyFilePath"
 	set -e
 	
 	if [ $? -ne 0 ]; then
@@ -176,13 +176,17 @@ prepare_sample_configuration_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 	
+	local keyPairType
+	for keyPairType in rsa ecdsa ed25519
+	do
+		prepare_sample_configuration_createSshKeyPair "$keyPairType"
+	done
+
 	if [ ! -d sample-configuration/packages/.git ]; then
 		git -C sample-configuration clone --depth 1 --recurse-submodules https://github.com/libertine-linux/packages
 	fi
 
 	sample-configuration/packages/checkout-submodules-to-master
-
-	prepare_sample_configuration_createSshKeyPair 'ed25519'
 }
 
 prepare_sample_configuration_main "$@"
