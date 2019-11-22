@@ -191,13 +191,13 @@ _libertine_compile_machineLock_acquirePerMachineMutexLock()
 		# Spinlock
 		while true
 		do
-			if mkdir "$machine"; then
+			if mkdir "$machine" 2>/dev/null; then
 				_libertine_compile_machineLock_addLockTrapHandler_machine="$machine"
 				return 0
 			else
 				sleepCount=$((sleepCount+1))
 				if [ $sleepCount -gt $maximumSleepCount ]; then
-					core_exitError 1 "Can not acquire lock for machine '$machine' in a timely manner"
+					core_exitError 1 "Can not acquire lock for machine '$machine' in a timely manner (in parent folder '$libertine_machineLocksOutputFolderPath'); perhaps a lock is left behind there?"
 				fi
 				core_message NOTICE "Waiting 1 second to acquire lock for machine '$machine'"
 				sleep 1
