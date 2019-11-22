@@ -130,11 +130,6 @@ prepare_sample_configuration_createSshKeyPair()
 {
 	local keyPairType="$1"
 	
-	if ! command -v ssh-keygen 1>/dev/null 2>/dev/null; then
-		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as 'ssh-keygen' is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
-		return 0
-	fi
-
 	case "$keyPairType" in
 		
 		dsa)
@@ -158,6 +153,11 @@ prepare_sample_configuration_createSshKeyPair()
 	local keyFilePath=sample-configuration/machines/example/settings/initramfs/etc/ssh/"ssh_host_${keyPairType}_key"
 
 	if [ -s "$keyFilePath" ]; then
+		return 0
+	fi
+
+	if ! command -v ssh-keygen 1>/dev/null 2>/dev/null; then
+		printf '%s\n' "Could not generate host key pair for $keyPairType for the example machine as 'ssh-keygen' is not in the PATH; please it in machines/example/settings/initramfs/etc/ssh/ssh_host_${keyPairType}_key and ssh_host_${keyPairType}_key.pub"
 		return 0
 	fi
 
