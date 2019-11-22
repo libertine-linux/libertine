@@ -11,27 +11,27 @@ And, because it bootstraps itself from almost nothing, only a system C and C++ c
 
 This builds a full Libertine Linux image for a machine called `example`:-
 
-	git clone https://github.com/lemonrock/libertine.git
+	git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/lemonrock/libertine.git
 	cd libertine
 	
-	# This script tries to use ssh-keygen to generate RSA and ED25519 keys for the `example` machine.
-	./run-after-clone
+	# This script tries to:-
+	# * Populate a packages git repository (not submodule)
+	# * Use ssh-keygen to generate RSA and ED25519 keys for the `example` machine.
+	./prepare-sample-configuration
 	
 	# Wait a long time
 	
-	# Run inside docker
-	./libertine-docker -v 2
+	# Run inside a known, good, versioned Alpine Linux v3.9 chroot (in the future, we'll use a known good Libertine Linux image; this is just a bootstrap).
+	./run-libertine-in-alpine-linux-chroot -v 2
 	
-	# Output ready-to-run Linux image is in output/machines/example/libertine-linux.vmlinuz
+	# Output ready-to-run Linux image is in sample-configuration/output/machines/example/libertine-linux.vmlinuz
 	
 	# Test using QEMU (requires qemu-system-x86_64 to be present)
-	./test-with-qemu
+	old/test-with-qemu
 	
 	# Now log on to the console with a root password of `helloworld`
 
-If you don`t want to use docker, you can just run directly with `./libertine -v 2`. This has only been tested on Alpine Linux 3.8.
-
-To see what`s going on, take a look at the files in `machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best. There`s a section below on understanding the configuration files that make up a machine. Machines are just a collection of packages, their configurations and any machine specific files. For example, the salted, hashed root password is stored in the file `machines/example/package-configurations/libertine_filesystem_root_password.config`.
+To see what`s going on, take a look at the files in `sample-configuration/machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best. There`s a section below on understanding the configuration files that make up a machine. Machines are just a collection of packages, their configurations and any machine specific files. For example, the salted, hashed root password is stored in the file `sample-configuration/machines/example/package-configurations/libertine_filesystem_root_password.config`.
 
 
 ## Why?

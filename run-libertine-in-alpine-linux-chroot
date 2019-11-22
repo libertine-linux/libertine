@@ -104,10 +104,11 @@ _program_path_find()
 
 fail()
 {
-	local message="$1"
+	local exitCode="$1"
+	local message="$2"
 	
 	printf '%s:FAIL:%s\n' "$program_name" "$message" 1>&2
-	exit 1
+	exit $exitCode
 }
 
 depends()
@@ -116,9 +117,8 @@ depends()
 	for binary in "$@"
 	do
 		if ! command -v "$binary" 1>/dev/null 2>/dev/null; then
-			printf '%s:%s\n' "$program_name" "The binary `$binary` is not on the PATH"
 			local EX_OSFILE=72
-			exit $EX_OSFILE
+			fail $EX_OSFILE "The binary `$binary` is not on the PATH"
 		fi
 	done
 }
