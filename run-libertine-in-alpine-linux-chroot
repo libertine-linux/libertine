@@ -107,7 +107,7 @@ fail()
 	local exitCode="$1"
 	local message="$2"
 	
-	printf '%s:FAIL:%s\n' "$program_name" "$message" 1>&2
+	printf '%s: FAIL: %s\n' "$program_name" "$message" 1>&2
 	exit $exitCode
 }
 
@@ -340,7 +340,7 @@ run_libertine_in_alpine_linux_chroot_runInChroot()
 	fi
 	if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
 		set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
-		IFS=' ' printf "%s:NOTICE:About to run '%s\n'" 1>&2 "$program_name" "$*"
+		IFS=' ' printf "%s: NOTICE: About to run '%s'\n" 1>&2 "$program_name" "$*"
 	fi
 
 	set +e

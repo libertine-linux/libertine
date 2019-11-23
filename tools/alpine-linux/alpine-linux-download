@@ -140,12 +140,12 @@ depends_binary()
 }
 
 depends rm mkdir
-alpine_linux_x_prepare()
+alpine_linux_download_prepare()
 {
 	rm -rf "$alpine_linux_temporaryFolderPath"
 	mkdir -m 0700 -p "$alpine_linux_temporaryFolderPath"
 
-	_alpine_linux_x_prepare_rebuild()
+	_alpine_linux_download_prepare_rebuild()
 	{
 		local folderPath="$1"
 		local usesPackages="$2"
@@ -171,14 +171,14 @@ alpine_linux_x_prepare()
 		fi
 	}
 
-	_alpine_linux_x_prepare_rebuild "$alpine_linux_extractFolderPath" true true
-	_alpine_linux_x_prepare_rebuild "$alpine_linux_packagesFolderPath" true false
-	_alpine_linux_x_prepare_rebuild "$alpine_linux_indexFolderPath" false false
-	_alpine_linux_x_prepare_rebuild "$alpine_linux_mirrorFolderPath" false false
+	_alpine_linux_download_prepare_rebuild "$alpine_linux_extractFolderPath" true true
+	_alpine_linux_download_prepare_rebuild "$alpine_linux_packagesFolderPath" true false
+	_alpine_linux_download_prepare_rebuild "$alpine_linux_indexFolderPath" false false
+	_alpine_linux_download_prepare_rebuild "$alpine_linux_mirrorFolderPath" false false
 }
 
 depends mv
-alpine_linux_x_downloadNetbootFile()
+alpine_linux_download_downloadNetbootFile()
 {
 	local fileName="$1"
 
@@ -188,16 +188,16 @@ alpine_linux_x_downloadNetbootFile()
 	mv "$alpine_linux_temporaryFolderPath"/"$fileName"-"$variant" "$alpine_linux_mirrorFolderPath"/"$fileName"
 }
 
-alpine_linux_x_downloadNetboot()
+alpine_linux_download_downloadNetboot()
 {
 	local fileName
 	for fileName in vmlinuz initramfs
 	do
-		alpine_linux_x_downloadNetbootFile "$fileName"
+		alpine_linux_download_downloadNetbootFile "$fileName"
 	done
 }
 
-alpine_linux_x_downloadApkIndex()
+alpine_linux_download_downloadApkIndex()
 {
 	local repositoryVariant="$1"
 
@@ -208,13 +208,13 @@ alpine_linux_x_downloadApkIndex()
 }
 
 depends tar
-alpine_linux_x_extractApkIndex()
+alpine_linux_download_extractApkIndex()
 {
 	tar -x -f "$alpine_linux_mirrorFolderPath"/APKINDEX.tar.gz -C "$alpine_linux_temporaryFolderPath" APKINDEX
 }
 
 depends sort rm
-alpine_linux_x_convertApkIndex()
+alpine_linux_download_convertApkIndex()
 {
 	# Package name.
 	local valueFor_P=''
@@ -470,7 +470,7 @@ alpine_linux_x_convertApkIndex()
 }
 
 depends awk rm
-alpine_linux_x_findApkPackage()
+alpine_linux_download_findApkPackage()
 {
 	local packagesToDownloadFilePath="$1"
 	local package="$2"
@@ -481,7 +481,7 @@ alpine_linux_x_findApkPackage()
 
 	if [ ! -f "$dependsOnPackagesFilePath" ]; then
 		
-		_alpine_linux_x_findApkPackage_awkDependency()
+		_alpine_linux_download_findApkPackage_awkDependency()
 		{
 			dependencyKind="$1"
 
@@ -490,7 +490,7 @@ alpine_linux_x_findApkPackage()
 			awk "$awkProgram" "$alpine_linux_indexFolderPath"/depends-"$dependencyKind".tsv >"$resultsFilePath"
 		}
 
-		_alpine_linux_x_findApkPackage_awkProvides()
+		_alpine_linux_download_findApkPackage_awkProvides()
 		{
 			local dependsOn
 			while IFS='' read -r dependsOn
@@ -506,21 +506,21 @@ alpine_linux_x_findApkPackage()
 			local resultsFilePath
 
 			# Find the binaries depended on.
-			_alpine_linux_x_findApkPackage_awkDependency binary
-			_alpine_linux_x_findApkPackage_awkProvides
+			_alpine_linux_download_findApkPackage_awkDependency binary
+			_alpine_linux_download_findApkPackage_awkProvides
 
 			# Find the PCs depended on.
-			_alpine_linux_x_findApkPackage_awkDependency pc
-			_alpine_linux_x_findApkPackage_awkProvides
+			_alpine_linux_download_findApkPackage_awkDependency pc
+			_alpine_linux_download_findApkPackage_awkProvides
 
 			# Find the SOs depended on.
-			_alpine_linux_x_findApkPackage_awkDependency so
-			_alpine_linux_x_findApkPackage_awkProvides
+			_alpine_linux_download_findApkPackage_awkDependency so
+			_alpine_linux_download_findApkPackage_awkProvides
 
 			# TODO: BUG: Package conflicts are not supported.
 
 			# Find the packages depended on.
-			_alpine_linux_x_findApkPackage_awkDependency package-or-virtual-package
+			_alpine_linux_download_findApkPackage_awkDependency package-or-virtual-package
 			local packageDependedOn
 			local packageDependedOnWasVirtualPackage
 			while IFS='' read -r packageDependedOn
@@ -540,12 +540,12 @@ alpine_linux_x_findApkPackage()
 
 	while IFS='' read -r packageDependedOn
 	do
-		alpine_linux_x_findApkPackage "$packagesToDownloadFilePath" "$packageDependedOn"
+		alpine_linux_download_findApkPackage "$packagesToDownloadFilePath" "$packageDependedOn"
 	done <"$dependsOnPackagesFilePath"
 }
 
 depends awk rm
-alpine_linux_x_findApkPackages()
+alpine_linux_download_findApkPackages()
 {
 	local packagesToDownloadFilePath="$alpine_linux_temporaryFolderPath"/packages-to-download
 
@@ -557,7 +557,7 @@ alpine_linux_x_findApkPackages()
 		local package
 		while IFS='' read -r package
 		do
-			alpine_linux_x_findApkPackage "$packagesToDownloadFilePath" "$package" 
+			alpine_linux_download_findApkPackage "$packagesToDownloadFilePath" "$package" 
 		done <"$topLevelPackagesReversedFilePath"
 	} >"$packagesToDownloadFilePath"
 	set +f
@@ -582,7 +582,7 @@ alpine_linux_x_findApkPackages()
 	rm "$packagesToDownloadFilePath"-and-in-installation-order 
 }
 
-alpine_linux_x_downloadApkPackage()
+alpine_linux_download_downloadApkPackage()
 {
 	local repositoryVariant="$1"
 	local apkName="$2"
@@ -598,7 +598,7 @@ alpine_linux_x_downloadApkPackage()
 
 depends tar
 depends_binary /bin/sh
-alpine_linux_x_extractApk()
+alpine_linux_download_extractApk()
 {
 	local apkName="$1"
 	local apkVersion="$2"
@@ -609,47 +609,47 @@ alpine_linux_x_extractApk()
 }
 
 depends cp
-alpine_linux_x_downloadMirror()
+alpine_linux_download_downloadMirror()
 {
 	if alpine_linux_cachedVersion "$alpine_linux_mirrorFolderPath"; then
 		return 0
 	fi
 
-	alpine_linux_x_downloadNetboot
-	alpine_linux_x_downloadApkIndex 'main'
+	alpine_linux_download_downloadNetboot
+	alpine_linux_download_downloadApkIndex 'main'
 
 	cp "$alpine_linux_versionFilePath" "$alpine_linux_mirrorVersionFilePath"
 }
 
 depends cp
-alpine_linux_x_indexApks()
+alpine_linux_download_indexApks()
 {
 	if alpine_linux_cachedVersion "$alpine_linux_indexFolderPath"; then
 		return 0
 	fi
 
-	alpine_linux_x_extractApkIndex
+	alpine_linux_download_extractApkIndex
 
-	alpine_linux_x_convertApkIndex
+	alpine_linux_download_convertApkIndex
 
 	cp "$alpine_linux_versionFilePath" "$alpine_linux_indexVersionFilePath"
 }
 
 depends cp
-alpine_linux_x_downloadApkPackages()
+alpine_linux_download_downloadApkPackages()
 {
 	if alpine_linux_cachedVersion "$alpine_linux_packagesFolderPath"; then
 		return 0
 	fi
 
-	alpine_linux_x_findApkPackages
+	alpine_linux_download_findApkPackages
 
 	local package
 	local version
 	local tab='	'
 	while IFS="$tab" read -r package version
 	do
-		alpine_linux_x_downloadApkPackage 'main' "$package" "$version"
+		alpine_linux_download_downloadApkPackage 'main' "$package" "$version"
 	done <"$alpine_linux_packagesFolderPath"/packages-to-install-and-in-installation-order
 
 	cp "$alpine_linux_versionFilePath" "$alpine_linux_packagesVersionFilePath"
@@ -657,7 +657,7 @@ alpine_linux_x_downloadApkPackages()
 }
 
 depends rm mkdir ln chmod cp
-alpine_linux_x_extractApks()
+alpine_linux_download_extractApks()
 {
 	if alpine_linux_cachedPackages "$alpine_linux_extractFolderPath"; then
 		return 0
@@ -668,7 +668,7 @@ alpine_linux_x_extractApks()
 	local tab='	'
 	while IFS="$tab" read -r package version
 	do
-		alpine_linux_x_extractApk "$package" "$version"
+		alpine_linux_download_extractApk "$package" "$version"
 	done <"$alpine_linux_packagesFolderPath"/packages-to-install-and-in-installation-order
 
 	# Clean up
@@ -720,7 +720,7 @@ alpine_linux_x_extractApks()
 }
 
 depends rm cp
-alpine_linux_x_main()
+alpine_linux_download_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 
@@ -775,20 +775,20 @@ If the output folder path is not provided, it defaults to program_location/outpu
 	local alpine_linux_architecture
 	alpine_linux_setEnvironmentVariables
 
-	alpine_linux_x_prepare
+	alpine_linux_download_prepare
 
 	local netbootFolderName
 	alpine_linux_netbootFolderName
 
-	alpine_linux_x_downloadMirror
+	alpine_linux_download_downloadMirror
 
-	alpine_linux_x_indexApks
+	alpine_linux_download_indexApks
 
-	alpine_linux_x_downloadApkPackages
+	alpine_linux_download_downloadApkPackages
 
-	alpine_linux_x_extractApks
+	alpine_linux_download_extractApks
 
 	rm -rf "$alpine_linux_temporaryFolderPath"
 }
 
-alpine_linux_x_main "$@"
+alpine_linux_download_main "$@"

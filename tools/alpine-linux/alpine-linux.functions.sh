@@ -210,7 +210,7 @@ alpine_linux_setEnvironmentVariables()
 
 	alpine_linux_mirror=https://alpine.global.ssl.fastly.net/alpine
 
-	IFS=$'\t'' ' read -r alpine_linux_majorVersion alpine_linux_minorVersion alpine_linux_revisionVersion alpine_linux_apkToolsVersion <"$alpine_linux_versionFilePath"
+	IFS=$'\t'' ' read -r alpine_linux_majorVersion alpine_linux_minorVersion alpine_linux_revisionVersion <"$alpine_linux_versionFilePath"
 	alpine_linux_architecture='x86_64'
 
 	alpine_linux_versionMirror="${alpine_linux_mirror}/v${alpine_linux_majorVersion}.${alpine_linux_minorVersion}"
