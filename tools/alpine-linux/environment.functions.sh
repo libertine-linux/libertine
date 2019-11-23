@@ -47,22 +47,39 @@ environment_reRunAsRootIfRequired()
 	fi
 }
 
+depends mount awk grep
+_environment_mountCount()
+{
+	local toFolderPath="$1"
+	set +e
+		mountCount="$(mount | awk '{print $3}' | grep -c '^'"$toFolderPath"'$')"
+	set -e
+}
+
 depends mount
 environment_mountPseudoFileSystem()
 {
 	local pseudoType="$1"
 	local toFolderPath="$2"
+
+	local mountCount
+	_environment_mountCount "$toFolderPath"
+	if [ $mountCount -gt 0 ]; then
+		return 0
+	fi
+
 	mount -t "$pseudoType" "$pseudoType" "$toFolderPath" 
 }
 
-depends mount awk grep
+depends mount
 environment_bindMount()
 {
 	local fromFolderPath="$1"
 	local toFolderPath="$2"
 	local readOnly="$3"
 
-	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
+	local mountCount
+	_environment_mountCount "$toFolderPath"
 	if [ $mountCount -gt 0 ]; then
 		return 0
 	fi
@@ -75,17 +92,18 @@ environment_bindMount()
 		local options=remount,bind
 	fi
 
-	mount -o $readOnly "$fromFolderPath" "$toFolderPath"
+	mount -o "$options" "$fromFolderPath" "$toFolderPath"
 	mount --make-slave "$toFolderPath"
 }
 
-depends mount awk grep
+depends mount
 environment_recursivelyMount()
 {
 	local fromFolderPath="$1"
 	local toFolderPath="$2"
 
-	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
+	local mountCount
+	_environment_mountCount "$toFolderPath"
 	if [ $mountCount -gt 0 ]; then
 		return 0
 	fi
