@@ -166,7 +166,7 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 				run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=true
 			;;
 
-			-r|--chroot)
+			-o|--output)
 				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
 				environment_parseCommandLineArguments_missingArgument "$@"
 				run_libertine_in_alpine_linux_chroot_outputFolderPath="$value"
@@ -175,16 +175,16 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 				shift 1
 			;;
 
-			--chroot=*)
+			--output=*)
 				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
-				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##--chroot=}"
+				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##--output=}"
 				run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=true
 
 			;;
 
-			-r*)
+			-o*)
 				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_outputFolderPathParsed
-				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##-r}"
+				run_libertine_in_alpine_linux_chroot_outputFolderPath="${key##-o}"
 				run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=true
 			;;
 
@@ -305,6 +305,11 @@ run_libertine_in_alpine_linux_chroot_prepare()
 
 	run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/configuration
 	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+
+	run_libertine_in_alpine_linux_chroot_buildFolderPath="$run_libertine_in_alpine_linux_chroot_outputFolderPath"/build
+	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_buildFolderPath"
+	run_libertine_in_alpine_linux_chroot_chrootBuildFolderPath="$run_libertine_in_alpine_linux_chroot_chrootFolderPath"/build
+	mkdir -m 0700 -p "$run_libertine_in_alpine_linux_chroot_chrootBuildFolderPath"
 }
 
 depends id sudo
@@ -316,12 +321,14 @@ run_libertine_in_alpine_linux_chroot_reRunAsRootIfRequired()
 	fi
 }
 
+depends mkdir
 run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 {
 	trap "" EXIT HUP INT QUIT TERM
 
-		environment_bindMount "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
-		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
+		environment_bindMount "$(pwd)"/mount "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath" true
+		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath" true
+		environment_bindMount "$run_libertine_in_alpine_linux_chroot_buildFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootBuildFolderPath" false
 
 		set -- \
 			--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
@@ -332,7 +339,7 @@ run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 				--machines-path /configuration/machines \
 				--authority-path /configuration/certificate-authority \
 				--configuration /configuration/alpine-linux.x86_64.libertine.config \
-				--output ./output
+				--output /build
 		if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
 			set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
 		fi
@@ -342,6 +349,7 @@ run_libertine_in_alpine_linux_chroot_mountExecuteInChrootAndUnmount()
 		tools/alpine-linux/alpine-linux-enter-chroot "$@"
 		local exitCode=$?
 
+		environment_recursivelyUnmountInChroot "$run_libertine_in_alpine_linux_chroot_chrootBuildFolderPath"
 		environment_recursivelyUnmountInChroot "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath"
 		environment_recursivelyUnmountInChroot "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath"
 
@@ -384,7 +392,7 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath
 	run_libertine_in_alpine_linux_chroot_prepare
 
-	tools/alpine-linux/alpine-linux-x \
+	tools/alpine-linux/alpine-linux-download \
 		--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
 		--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
 

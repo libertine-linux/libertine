@@ -15,6 +15,7 @@ dc	/usr/bin
 dd	/usr/bin
 diff	/usr/bin
 dirname	/usr/bin
+echo	/usr/bin
 ed	/usr/bin
 egrep	/usr/bin
 env	/usr/bin
@@ -56,6 +57,7 @@ tac	/usr/bin
 tail	/usr/bin
 tar	/usr/bin
 tee	/usr/bin
+test	/usr/bin
 touch	/usr/bin
 tr	/usr/bin
 true	/usr/bin

@@ -60,6 +60,7 @@ environment_bindMount()
 {
 	local fromFolderPath="$1"
 	local toFolderPath="$2"
+	local readOnly="$3"
 
 	local mountCount="$(mount | awk '{print $3}' | grep -m 1 -c '^'"$toFolderPath"'$')"
 	if [ $mountCount -gt 0 ]; then
@@ -67,7 +68,14 @@ environment_bindMount()
 	fi
 
 	mount --bind "$fromFolderPath" "$toFolderPath"
-	mount -o remount,bind,ro "$fromFolderPath" "$toFolderPath"
+
+	if $readOnly; then
+		local options=remount,bind,ro
+	else
+		local options=remount,bind
+	fi
+
+	mount -o $readOnly "$fromFolderPath" "$toFolderPath"
 	mount --make-slave "$toFolderPath"
 }
 
