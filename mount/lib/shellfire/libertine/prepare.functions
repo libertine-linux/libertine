@@ -106,3 +106,10 @@ libertine_prepare_setEssentialMachineGlobalVariables()
 	libertine_machinePackageConfigurationsFolderPath="$libertine_machineFolderPath"/package-configurations
 	libertine_machineInputPackagesPath="$libertine_machineFolderPath"/packages
 }
+
+core_dependency_requires '*' id
+libertine_prepare_initialiseUidGid()
+{
+	libertine_public_uid="$(id -u)"
+	libertine_public_gid="$(id -g)"
+}

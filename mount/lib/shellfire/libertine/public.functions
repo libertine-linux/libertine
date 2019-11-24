@@ -342,7 +342,13 @@ _libertine_public_copy_filesystem_homeFolderProtection()
 	fi
 }
 
-core_dependency_requires '*' find xargs rm chmod id chown
+# Initialised by libertine_prepare_initialiseUidGid()
+libertine_public_uid=""
+
+# Initialised by libertine_prepare_initialiseUidGid()
+libertine_public_gid=""
+
+core_dependency_requires '*' find xargs rm chmod chown
 libertine_public_copy_filesystem()
 {
 	libertine_public_copy "$1". "$2"
@@ -352,8 +358,11 @@ libertine_public_copy_filesystem()
 	shift $shiftAmount
 	local destinationFolderPath="$1"
 	
-	# 1 - 3: Remove files that shouldn't make it to the initramfs
-	# 4, 5, 6, 7: Remove block devices, char devices, named pipes (FIFOs) and sockets; these should be created using initramfs generate (and can't have been created via storage in git)
+	# find invocations 1 - 3: Remove files that shouldn't make it to the initramfs.
+	# find invocation 4: Remove block devices (should be created by initramfs creation scripts).
+	# find invocation 5: Remove char devices (should be created by initramfs creation scripts).
+	# find invocation 6: Remove named pipes (FIFOs) (should be created by initramfs creation scripts).
+	# find invocation 7: Remove (Unix Domain) sockets (should be created by initramfs creation scripts).
 	find "$destinationFolderPath" -type f -name '*.disabled' -print0 | xargs -0 -r -s 1024 rm -rf
 	find "$destinationFolderPath" -type f -name 'README' -print0 | xargs -0 -r -s 1024 rm -rf
 	find "$destinationFolderPath" -type f -name 'README.*' -print0 | xargs -0 -r -s 1024 rm -rf
@@ -362,12 +371,10 @@ libertine_public_copy_filesystem()
 	find "$destinationFolderPath" -type p -print0 | xargs -0 -r -s 1024 rm -rf
 	find "$destinationFolderPath" -type s -print0 | xargs -0 -r -s 1024 rm -rf
 	
-	# Ensure all files are owned by the current user, so that the initramfs generation code correctly maps to root
-	local uid="$(id -u)"
-	local gid="$(id -g)"
-	chown -h -R $uid:$gid "$destinationFolderPath"
-		
-	# Normalise folder and file permissions
+	# Ensure all files are owned by the current user, so that the initramfs generation code correctly maps to root.
+	chown -h -R $libertine_public_uid:$libertine_public_gid "$destinationFolderPath"
+	
+	# Normalise folder and file permissions.
 	find "$destinationFolderPath" -type f -perm -0500 -print0 | xargs -0 -r -s 1024 chmod 0755
 	find "$destinationFolderPath" -type f ! -perm -0500 -print0 | xargs -0 -r -s 1024 chmod 0644
 	find "$destinationFolderPath" -type d -print0 | xargs -0 -r -s 1024 chmod 0755

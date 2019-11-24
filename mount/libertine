@@ -22,6 +22,8 @@ _program()
 		libertine_prepare_machineOutputFolders
 		
 		libertine_prepare_setEssentialMachineGlobalVariables
+
+		libertine_prepare_initialiseUidGid
 		
 		# TODO: Document this 'hack' - we have to know this data in advance of using musl-cross-make
 		. "$libertine_machineInputPackagesPath"/musl_cross_make/compiler-details
