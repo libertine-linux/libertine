@@ -253,7 +253,7 @@ If the output folder path is not provided, it defaults to program_location/outpu
 
 	alpine_linux_enter_chroot_createChroot
 
-	environment_reRunAsRootIfRequired
+	environment_reRunAsRootIfRequired "$@"
 
 	alpine_linux_enter_chroot_mountRunAndUnmount "$@"
 }

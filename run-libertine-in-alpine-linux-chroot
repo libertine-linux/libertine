@@ -338,6 +338,7 @@ run_libertine_in_alpine_linux_chroot_runInChroot()
 	if $run_libertine_in_alpine_linux_chroot_debug; then
 		set -- "$@" --debug
 	fi
+
 	if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
 		set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
 		IFS=' ' printf "%s: NOTICE: About to run '%s'\n" 1>&2 "$program_name" "$*"
@@ -412,8 +413,8 @@ If the machine name is not provided, it defaults to example.
 		--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
 		--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
 
-	environment_reRunAsRootIfRequired
-
+	environment_reRunAsRootIfRequired "$@"
+	
 	run_libertine_in_alpine_linux_chroot_mountRunInChrootAndUnmount
 }
 
