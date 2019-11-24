@@ -574,7 +574,7 @@ alpine_linux_download_findApkPackages()
 
 	# Add versioning information
 	local package
-	while IFS= read -r package
+	while IFS='' read -r package
 	do
 		local awkProgram='BEGIN {FS="\t"; OFS="\t"}; $1=="'"${package}"'" {print $1,$2}'
 		awk "$awkProgram" "$alpine_linux_indexFolderPath"/packages.tsv
@@ -683,7 +683,7 @@ alpine_linux_download_extractApks()
 	local binary
 	local folder
 	local tab='	'
-	while IFS="$tab" read -r binary folder
+	while IFS="$tab"' ' read -r binary folder
 	do
 
 		local symlinkSource

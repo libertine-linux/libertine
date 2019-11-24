@@ -126,7 +126,7 @@ depends()
 	done
 }
 
-depends cp rm mkdir
+depends cp rm mkdir chmod
 alpine_linux_enter_chroot_createChroot()
 {
 	cp -a "$alpine_linux_extractFolderPath"/. "$alpine_linux_chrootFolderPath"/
