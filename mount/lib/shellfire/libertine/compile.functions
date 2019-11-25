@@ -323,7 +323,7 @@ libertine_compile_packageLock_compileWhilstLocked()
 	# Remove any previous output
 	local outputPath="$(libertine_public_outputPath "$package")"
 	core_message INFO "      Deleting previous build output for package '$package' (if any) at '$outputPath'"
-	chmod -R 0777 "$outputPath" 1>/dev/null 2>/dev/null || true
+	chmod -R 0700 "$outputPath" 1>/dev/null 2>/dev/null || true
 	rm -rf "$outputPath"
 	mkdir -m 0700 -p "$outputPath"
 	
