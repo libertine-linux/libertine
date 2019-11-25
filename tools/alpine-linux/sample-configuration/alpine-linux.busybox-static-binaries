@@ -29,6 +29,7 @@ sha256sum	/usr/bin
 sleep	/bin
 sort	/usr/bin
 stat	/bin
+su	/bin
 tail	/usr/bin
 test	/usr/bin
 touch	/bin

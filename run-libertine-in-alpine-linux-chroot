@@ -328,6 +328,9 @@ run_libertine_in_alpine_linux_chroot_runInChroot()
 		tools/alpine-linux/alpine-linux-enter-chroot \
 		--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
 		--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath" \
+		--mount "$run_libertine_in_alpine_linux_chroot_mountFolderPath":/mount:true \
+		--mount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath":/configuration:true \
+		--mount "$run_libertine_in_alpine_linux_chroot_buildFolderPath":/build:false \
 		-- \
 			/mount/libertine \
 			--machine "$run_libertine_in_alpine_linux_chroot_machineName" \
@@ -358,10 +361,6 @@ run_libertine_in_alpine_linux_chroot_mountRunInChrootAndUnmount()
 	}
 
 	trap _run_libertine_in_alpine_linux_chroot_mountRunInChrootAndUnmount_cleanUp EXIT HUP INT QUIT TERM
-
-		environment_bindMount "$run_libertine_in_alpine_linux_chroot_mountFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootMountFolderPath" true
-		environment_bindMount "$run_libertine_in_alpine_linux_chroot_configurationFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootConfigurationFolderPath" true
-		environment_bindMount "$run_libertine_in_alpine_linux_chroot_buildFolderPath" "$run_libertine_in_alpine_linux_chroot_chrootBuildFolderPath" false
 
 		local exitCode
 		run_libertine_in_alpine_linux_chroot_runInChroot
@@ -413,8 +412,6 @@ If the machine name is not provided, it defaults to example.
 		--configuration "$run_libertine_in_alpine_linux_chroot_configurationFolderPath"/alpine-linux \
 		--output "$run_libertine_in_alpine_linux_chroot_outputFolderPath"
 
-	environment_reRunAsRootIfRequired "$@"
-	
 	run_libertine_in_alpine_linux_chroot_mountRunInChrootAndUnmount
 }
 

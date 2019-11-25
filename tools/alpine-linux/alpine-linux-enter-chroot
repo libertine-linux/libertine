@@ -126,15 +126,18 @@ depends()
 	done
 }
 
-depends cp rm mkdir chmod
-alpine_linux_enter_chroot_createChroot()
+depends cp rm
+alpine_linux_enter_chroot_createChroot_copyExtract()
 {
 	cp -a "$alpine_linux_extractFolderPath"/. "$alpine_linux_chrootFolderPath"/
 	set +f
 		rm -rf "$alpine_linux_chrootFolderPath"/.alpine-linux.*
 	set -f
+}
 
-	# Create basic folders.
+depends mkdir
+alpine_linux_enter_chroot_createChroot_makeCoreFolders()
+{
 	local folder
 	for folder in dev etc home mnt opt proc root run sys tmp usr/local usr/local/bin usr/local/sbin var/cache var/run var/tmp
 	do
@@ -142,21 +145,95 @@ alpine_linux_enter_chroot_createChroot()
 	done
 }
 
+depends id mkdir
+alpine_linux_enter_chroot_createChroot_createBarebonesEtcPasswd()
+{
+	local currentUid="$(id -u)"
+	local currentGid="$(id -g)"
+
+	{
+		_alpine_linux_enter_chroot_createChroot_createBarebonesEtcPasswd_entry()
+		{
+			local user="$1"
+			local uid="$2"
+			local gid="$3"
+			local homeFolderPath="$4"
+			local shellFilePath="$5"
+			local gecos="$user"
+			printf '%s:x:%s:%s:%s:%s:%s\n' "$user" "$uid" "$gid" "$gecos" "$homeFolderPath" "$shellFilePath"
+		}
+
+		_alpine_linux_enter_chroot_createChroot_createBarebonesEtcPasswd_entry root 0 0 /root /bin/sh
+
+		if [ $currentUid -ne 0 ]; then
+			if [ $currentGid -ne 0 ]; then
+				local user='currentuser'
+				_alpine_linux_enter_chroot_createChroot_createBarebonesEtcPasswd_entry "$user" "$currentUid" "$currentGid" /home/"$user" /bin/sh
+				mkdir -m 0700 -p "$alpine_linux_chrootFolderPath"/home/"$user"
+			fi
+		fi
+
+	} >"$alpine_linux_chrootFolderPath"/etc/passwd
+}
+
+depends cp rm mkdir
+alpine_linux_enter_chroot_createChroot()
+{
+	alpine_linux_enter_chroot_createChroot_copyExtract
+
+	alpine_linux_enter_chroot_createChroot_makeCoreFolders
+
+	alpine_linux_enter_chroot_createChroot_createBarebonesEtcPasswd
+}
+
+depends cat chmod
+alpine_linux_enter_chroot_createSuCommandToRunAsCurrentUser()
+{
+	shift $alpine_linux_positionalArgumentsStartAt
+	{
+		cat <<-EOF
+			#!/bin/sh
+
+			set -e
+			set -f
+			set -u
+
+		EOF
+
+		printf 'exec'
+
+		local argument
+		for argument in "$@"
+		do
+			local escapedArgument="$(printf '%s' "$argument" | sed -e s/\'/\'\"\'\"\'/g)"
+			printf " '%s'" "$escapedArgument"
+		done
+		printf '\n'
+
+	} >"$alpine_linux_chrootFolderPath"/su-command
+	chmod 0700 "$alpine_linux_chrootFolderPath"/su-command
+}
+
 depends env chroot
 alpine_linux_enter_chroot_run()
 {
-	shift $alpine_linux_positionalArgumentsStartAt
 	set -- \
 		PATH='/usr/sbin:/sbin:/usr/bin:/bin' \
-		LOGNAME='root' \
-		USER='root' \
-		HOME='/root' \
+		LOGNAME='currentuser' \
+		USER='currentuser' \
+		HOME='/home/currentuser' \
 		LANG=C.UTF-8 \
 		LANGUAGE=en_US:en \
-		chroot . "$@"
+		chroot . \
+			/bin/su \
+			-p \
+			-s /bin/sh \
+			-c 'exec /su-command' \
+			currentuser
 	if [ -t 1 ]; then
 		set -- TERM="${TERM:-dumb}" "$@"
 	fi
+
 	set +e
 		env -i "$@"
 		exitCode=$?
@@ -173,6 +250,32 @@ alpine_linux_enter_chroot_mountRunAndUnmount()
 	cd "$alpine_linux_chrootFolderPath" 1>/dev/null 2>/dev/null
 
 		trap _alpine_linux_enter_chroot_mountRunAndUnmount_cleanUp EXIT HUP INT QUIT TERM
+
+			local mountFromFolderPath
+			local mountToFolderPath
+			local recursiveMount
+			while IFS=':' read -r mountFromFolderPath mountToFolderPath recursiveMount
+			do
+				case "$recursiveMount" in
+
+					true| false)
+						:
+					;;
+
+					'')
+						continue
+					;;
+
+					*)
+						fail 1 "Invalid mount data"
+					;;
+
+				esac
+
+				environment_bindMount "$mountFromFolderPath" "${alpine_linux_chrootFolderPath}${mountToFolderPath}" "$recursiveMount"
+			done <<-EOF
+				${alpine_linux_mount}
+			EOF
 
 			environment_mountPseudoFileSystem proc "$alpine_linux_chrootFolderPath"/proc
 			environment_recursivelyMount /sys "$alpine_linux_chrootFolderPath"/sys
@@ -201,15 +304,43 @@ alpine_linux_enter_chroot_main()
 	local environment_parseCommandLineArguments_message="${program_name}:  Enters an Alpine Linux chroot.
 
 Usage: ${program_name} -h | --help
-Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder]
+Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--output /path/to/output/folder [-m|--mount from1:to1:recursive1,from2:to2:recursive2]]
 
 If the configuration folder path is not provided, it defaults to program_location/sample-configuration.
 
 If the output folder path is not provided, it defaults to program_location/output. The output folder path is created as necessary.
+
+The mount argument is a triplet of from folder path and to folder path and true/false for recursive mounting. It can be repeated.
+from folder path and to folder path should not contain colons or new lines.
 "
+	local alpine_linux_mount=""
 	_additionalArgumentsCallback()
 	{
-			environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
+		case "$key" in
+			-m|--mount)
+				environment_parseCommandLineArguments_missingArgument "$@"
+				alpine_linux_mount="${alpine_linux_mount}
+${value}"
+				_additionalArgumentsCallback_shiftUp=1
+			;;
+
+			--mount=*)
+				value="${key##--mount=}"
+				alpine_linux_mount="${alpine_linux_mount}
+${value}"
+			;;
+
+			-m*)
+				environment_parseCommandLineArguments_alreadyParsed $alpine_linux_configurationFolderPathParsed
+				value="${key##-m}"
+				alpine_linux_mount="${alpine_linux_mount}
+${value}"
+			;;
+
+			*)
+				environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
+			;;
+		esac
 	}
 	_positionalArgumentsCallback()
 	{
@@ -251,11 +382,19 @@ If the output folder path is not provided, it defaults to program_location/outpu
 
 	local alpine_linux_chrootFolderPath="$alpine_linux_outputFolderPath"/chroot
 
-	alpine_linux_enter_chroot_createChroot
+	local reRunAsRoot=true
 
-	environment_reRunAsRootIfRequired "$@"
+	if [ -n "${SUDO_UID+isset}" ]; then
+		reRunAsRoot=false
+	fi
+	
+	if $reRunAsRoot; then
+		alpine_linux_enter_chroot_createChroot
+		alpine_linux_enter_chroot_createSuCommandToRunAsCurrentUser "$@"
+		environment_reRunAsRootIfRequired "$@"
+	fi
 
-	alpine_linux_enter_chroot_mountRunAndUnmount "$@"
+	alpine_linux_enter_chroot_mountRunAndUnmount
 }
 
 alpine_linux_enter_chroot_main "$@"

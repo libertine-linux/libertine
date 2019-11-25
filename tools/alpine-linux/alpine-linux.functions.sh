@@ -84,7 +84,7 @@ alpine_linux_parseCommandLineArguments()
 			;;
 
 			-*)
-				local _additionalArgumentsCallback_shiftUp
+				local _additionalArgumentsCallback_shiftUp=0
 				$additionalArgumentsCallback "$@"
 				if [ $_additionalArgumentsCallback_shiftUp -gt 0 ]; then
 					alpine_linux_positionalArgumentsStartAt=$((alpine_linux_positionalArgumentsStartAt + _additionalArgumentsCallback_shiftUp))
