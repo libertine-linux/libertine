@@ -69,23 +69,23 @@ core_dependency_requires '*' mkdir
 libertine_prepare_sharedCacheFolders()
 {
 	# Machine Locks
-	libertine_machineLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/.machine-locks
+	libertine_machineLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/locks/machine
 	mkdir -m 0700 -p "$libertine_machineLocksOutputFolderPath"
 	
 	# Machine Caches
-	libertine_machineCachesOutputFolderPath="$libertine_machinesOutputFolderPath"/.machine-cache
+	libertine_machineCachesOutputFolderPath="$libertine_machinesOutputFolderPath"/cache/machine
 	mkdir -m 0700 -p "$libertine_machineCachesOutputFolderPath"
 	
 	# Package Locks
-	libertine_packageLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-locks
+	libertine_packageLocksOutputFolderPath="$libertine_machinesOutputFolderPath"/locks/package
 	mkdir -m 0700 -p "$libertine_packageLocksOutputFolderPath"
 	
 	# Package Caches
-	libertine_packageCacheOutputFolderPath="$libertine_machinesOutputFolderPath"/.package-cache
+	libertine_packageCacheOutputFolderPath="$libertine_machinesOutputFolderPath"/cache/package
 	mkdir -m 0700 -p "$libertine_packageCacheOutputFolderPath"
 	
 	# ccache Cache (sic)
-	libertine_ccachePath="$libertine_machinesOutputFolderPath"/.ccache
+	libertine_ccachePath="$libertine_machinesOutputFolderPath"/cache/ccache
 	mkdir -m 0700 -p "$libertine_ccachePath"
 }
 

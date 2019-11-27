@@ -128,7 +128,6 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 	local run_libertine_in_alpine_linux_chroot_configurationFolderPathParsed=false
 	local run_libertine_in_alpine_linux_chroot_outputFolderPathParsed=false
 	local run_libertine_in_alpine_linux_chroot_machineNameParsed=false
-	local run_libertine_in_alpine_linux_chroot_verboseParsed=false
 	local run_libertine_in_alpine_linux_chroot_debugParsed=false
 
 	# Parse non-positional arguments.
@@ -210,25 +209,9 @@ run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments()
 			;;
 
 			-v|--verbose)
-				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
-				environment_parseCommandLineArguments_missingArgument "$@"
-				run_libertine_in_alpine_linux_chroot_verbose="$value"
-				run_libertine_in_alpine_linux_chroot_verboseParsed=true
-
-				shift 1
+				run_libertine_in_alpine_linux_chroot_verbose=$((run_libertine_in_alpine_linux_chroot_verbose + 1))
 			;;
 
-			--verbose=*)
-				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
-				run_libertine_in_alpine_linux_chroot_verbose="${key##--verbose=}"
-				run_libertine_in_alpine_linux_chroot_verboseParsed=true
-			;;
-
-			-v*)
-				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_alpine_linux_chroot_verboseParsed
-				run_libertine_in_alpine_linux_chroot_verbose="${key##-v}"
-				run_libertine_in_alpine_linux_chroot_verboseParsed=true
-			;;
 
 			-d|--debug)
 				run_libertine_in_alpine_linux_chroot_debug=true
@@ -342,7 +325,7 @@ run_libertine_in_alpine_linux_chroot_runInChroot()
 		set -- "$@" --debug
 	fi
 
-	if [ -n "$run_libertine_in_alpine_linux_chroot_verbose" ]; then
+	if [ $run_libertine_in_alpine_linux_chroot_verbose -gt 0 ]; then
 		set -- "$@" --verbose "$run_libertine_in_alpine_linux_chroot_verbose"
 		IFS=' ' printf "%s: NOTICE: About to run '%s'\n" 1>&2 "$program_name" "$*"
 	fi
@@ -394,7 +377,7 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_alpine_linux_chroot_configurationFolderPath="$(pwd)"/sample-configuration
 	local run_libertine_in_alpine_linux_chroot_outputFolderPath="$(pwd)"/output
 	local run_libertine_in_alpine_linux_chroot_machineName='example'
-	local run_libertine_in_alpine_linux_chroot_verbose=''
+	local run_libertine_in_alpine_linux_chroot_verbose=0
 	local run_libertine_in_alpine_linux_chroot_debug=false
 	run_libertine_in_alpine_linux_chroot_main_parseCommandLineArguments "$@"
 

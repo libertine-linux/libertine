@@ -1060,24 +1060,41 @@ libertine_public_autoconf_replaceWithKnownVersionOfLtmainSh()
 	cp -f "$(libertine_public_outputMiscPath build_libtool)"/ltmain.sh "$destinationFolderPath"
 }
 
-core_dependency_requires '*' cp
-libertine_public_autoconf_replaceWithKnownVersionOfBootstrap()
-{
-	local destinationFolderPath="$1"
-	
-	cp -f "$(libertine_public_outputMiscPath build_gnulib)"/build-aux/bootstrap "$destinationFolderPath"
-}
-
-core_dependency_requires '*' rm mkdir
-libertine_public_autoconf_replaceWithKnownVersionOfGnulib()
+libertine_public_autoconf_adjustGnulib()
 {
 	# eg "$(libertine_public_sourcePath)"/gnulib
 	local destinationFolderPath="$1"
-	
-	rm -rf "$destinationFolderPath"
-	mkdir -m 0755 -p "$destinationFolderPath"
-	
-	libertine_public_copy "$(libertine_public_outputMiscPath build_gnulib)"/. "$destinationFolderPath"
+
+	local buildAuxFolderPath="$destinationFolderPath"/build-aux
+
+	libertine_public_autoconf_replaceWithKnownVersionOfCompile "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfConfigSub "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfConfigGuess "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfConfigRpath "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfConfigLibpath "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfArLib "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfCompile "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfDepcomp "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfInstallSh "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfMdateSh "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfMkinstalldirs "$buildAuxFolderPath"
+	libertine_public_autoconf_replaceWithKnownVersionOfTexinfoTex "$buildAuxFolderPath"
+}
+
+core_dependency_requires '*' sed cp
+libertine_public_autoconf_adjustGnulibBootstrap()
+{
+	# eg "$(libertine_public_sourcePath)"
+	local destinationFolderPath="$1"
+
+	local buildAuxFolderPath="$destinationFolderPath"/gnulib/build-aux
+
+	# Stop bootstrap requiring autopoint binary
+	sed -i \
+		-e 's;^with_gettext=yes$;with_gettext=no;g' \
+		"$buildAuxFolderPath"/bootstrap
+
+	cp -f "$buildAuxFolderPath"/bootstrap "$destinationFolderPath"
 }
 
 libertine_public_autoconf_modernAutoconfConfigureOptions()

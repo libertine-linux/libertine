@@ -9,7 +9,7 @@ _program()
 	core_dependency_requires '*' rm
 	libertine()
 	{
-		umask 0000
+		umask 0077
 		
 		libertine_prepare_checkPathsDoNotHaveSpacesInThemAsAutoconfEtcToolsDoNotProperlyHandleThem
 		
