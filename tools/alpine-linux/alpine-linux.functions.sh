@@ -12,7 +12,7 @@ alpine_linux_parseCommandLineArguments()
 
 	alpine_linux_positionalArgumentsStartAt=0
 
-	alpine_linux_configurationFolderPath="$(pwd)"/configuration
+	alpine_linux_configurationFolderPath="$(pwd)"/sample-configuration
 	local alpine_linux_configurationFolderPathParsed=false
 
 	alpine_linux_outputFolderPath="$(pwd)"/output
@@ -111,36 +111,36 @@ depends mkdir
 alpine_linux_validateCommandLineArguments()
 {
 	if [ -z "$alpine_linux_configurationFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--configuration folder path is empty"
+		environment_parseCommandLineArguments_errorHelp "--configuration folder path is empty"
 	fi
 	if [ ! -e "$alpine_linux_configurationFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' does not exist"
+		environment_parseCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' does not exist"
 	fi
 	if [ ! -r "$alpine_linux_configurationFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not readable"
+		environment_parseCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not readable"
 	fi
 	if [ ! -d "$alpine_linux_configurationFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not a directory"
+		environment_parseCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not a directory"
 	fi
 	if [ ! -x "$alpine_linux_configurationFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not searchable"
+		environment_parseCommandLineArguments_errorHelp "--configuration folder path '$alpine_linux_configurationFolderPath' is not searchable"
 	fi
 	local absoluteFolderPath
 	environment_makeFolderPathAbsolute "$alpine_linux_configurationFolderPath"
 	alpine_linux_configurationFolderPath="$absoluteFolderPath"
 
 	if [ -z "$alpine_linux_outputFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--output folder path is empty"
+		environment_parseCommandLineArguments_errorHelp "--output folder path is empty"
 	fi
 	mkdir -m 0700 -p "$alpine_linux_outputFolderPath" || _alpine_linux_parsedCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' could not be created, is not a directory or is not accessible"
 	if [ ! -r "$alpine_linux_outputFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not readable"
+		environment_parseCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not readable"
 	fi
 	if [ ! -x "$alpine_linux_outputFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not searchable"
+		environment_parseCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not searchable"
 	fi
 	if [ ! -w "$alpine_linux_outputFolderPath" ]; then
-		_alpine_linux_parsedCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not writable"
+		environment_parseCommandLineArguments_errorHelp "--output folder path '$alpine_linux_outputFolderPath' is not writable"
 	fi
 	local absoluteFolderPath
 	environment_makeFolderPathAbsolute "$alpine_linux_outputFolderPath"

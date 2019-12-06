@@ -672,7 +672,6 @@ alpine_linux_download_extractApks()
 	done <"$alpine_linux_packagesFolderPath"/packages-to-install-and-in-installation-order
 
 	# Clean up
-	rm "$alpine_linux_extractFolderPath"/.dummy
 	rm "$alpine_linux_extractFolderPath"/.PKGINFO
 	set +f
 		rm "$alpine_linux_extractFolderPath"/.SIGN.*
@@ -712,7 +711,7 @@ alpine_linux_download_extractApks()
 	done <"$alpine_linux_busyboxStaticBinariesFilePath"
 
 	# Adjust permissions.
-	chmod -R g-rwx,o-rwx -- "$alpine_linux_extractFolderPath"
+	chmod -R g-rwx,o-rwx "$alpine_linux_extractFolderPath"
 
 	cp "$alpine_linux_versionFilePath" "$alpine_linux_extractVersionFilePath"
 	cp "$alpine_linux_packagesFilePath" "$alpine_linux_extractPackagesFilePath"
