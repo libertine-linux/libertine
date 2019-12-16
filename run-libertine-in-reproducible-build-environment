@@ -1,0 +1,382 @@
+#!/usr/bin/env sh
+# This file is part of libertine. It is subject to the licence terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT. No part of libertine, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2019 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux/libertine/master/COPYRIGHT.
+
+set -e
+set -f
+set -u
+
+program_name="run-libertine-in-reproducible-build-environment"
+
+_program_path_find()
+{
+	if [ "${0%/*}" = "$0" ]; then
+
+		# We've been invoked by the interpreter as, say, bash program
+		if [ -r "$0" ]; then
+			pwd -P
+		# Clutching at straws; probably run via a download, anonymous script, etc, weird execve, etc
+		else
+			printf '\n'
+		fi
+
+	else
+
+		# We've been invoked with a relative or absolute path (also when invoked via PATH in a shell)
+
+		_program_path_find_parentPath()
+		{
+			parentPath="${scriptPath%/*}"
+			if [ -z "$parentPath" ]; then
+				parentPath='/'
+			fi
+			cd "$parentPath" 1>/dev/null
+		}
+
+		# pdksh / mksh have problems with unsetting a variable that was never set...
+		if [ "${CDPATH+set}" = 'set' ]; then
+			unset CDPATH
+		fi
+
+		if command -v realpath 1>/dev/null 2>/dev/null; then
+			(
+				scriptPath="$(realpath "$0")"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		elif command -v readlink 1>/dev/null 2>/dev/null; then
+			(
+				local recursionDepth=0
+				_program_path_resolve_symlinks_recursively()
+				{
+					local unresolvedPath="$1"
+					
+					recursionDepth=$((recursionDepth + 1))
+					
+					if [ $recursionDepth -gt 10 ]; then
+						printf '%s\n' 'Recursion to depths greater than 10 is not allowed when resolving links.'
+						return 1
+					fi
+					
+					local potentialLinkDestination="$(readlink -- "$unresolvedPath")"
+					
+					if [ -z "$potentialLinkDestination" ]; then
+						scriptPath="$unresolvedPath"
+						return 0
+					fi
+					local linkDestination="$potentialLinkDestination"
+					local parentFolderPath="${unresolvedPath%/*}"
+					
+					if [ "$parentFolderPath" = "$unresolvedPath" ]; then
+						_program_path_resolve_symlinks_recursively "$linkDestination"
+					else
+						case "$linkDestination" in
+														
+							/*)
+								_program_path_resolve_symlinks_recursively "$linkDestination"
+							;;
+							
+							*)
+								_program_path_resolve_symlinks_recursively "$parentFolderPath"/"$linkDestination"
+							;;
+							
+						esac
+					fi
+				}
+
+				scriptPath="$0"
+				_program_path_resolve_symlinks_recursively "$scriptPath"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		else
+			# This approach will fail in corner cases where the script itself is a symlink in a path not parallel with the concrete script
+			(
+				scriptPath="$0"
+
+				_program_path_find_parentPath
+				pwd -P
+			)
+		fi
+
+	fi
+}
+
+fail()
+{
+	local exitCode="$1"
+	local message="$2"
+	
+	printf '%s: FAIL: %s\n' "$program_name" "$message" 1>&2
+	exit $exitCode
+}
+
+depends()
+{
+	local binary
+	for binary in "$@"
+	do
+		if ! command -v "$binary" 1>/dev/null 2>/dev/null; then
+			local EX_OSFILE=72
+			fail $EX_OSFILE "The binary `$binary` is not on the PATH"
+		fi
+	done
+}
+
+run_libertine_in_reproducible_build_environment_main_parseCommandLineArguments()
+{
+	local run_libertine_in_reproducible_build_environment_configurationFolderPathParsed=false
+	local run_libertine_in_reproducible_build_environment_outputFolderPathParsed=false
+	local run_libertine_in_reproducible_build_environment_machineNameParsed=false
+	local run_libertine_in_reproducible_build_environment_debugParsed=false
+
+	# Parse non-positional arguments.
+	local key
+	local value
+	while [ $# -gt 0 ]
+	do
+		local key="$1"
+
+		case "$key" in
+
+			-h|--help|-h*)
+				local EXIT_SUCCESS=0
+				environment_parseCommandLineArguments_printHelp $EXIT_SUCCESS
+			;;
+
+			-c|--configuration)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_configurationFolderPathParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				run_libertine_in_reproducible_build_environment_configurationFolderPath="$value"
+				run_libertine_in_reproducible_build_environment_configurationFolderPathParsed=true
+
+				shift 1
+			;;
+
+			--configuration=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_configurationFolderPathParsed
+				run_libertine_in_reproducible_build_environment_configurationFolderPath="${key##--configuration=}"
+				run_libertine_in_reproducible_build_environment_configurationFolderPathParsed=true
+			;;
+
+			-c*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_configurationFolderPathParsed
+				run_libertine_in_reproducible_build_environment_configurationFolderPath="${key##-c}"
+				run_libertine_in_reproducible_build_environment_configurationFolderPathParsed=true
+			;;
+
+			-o|--output)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_outputFolderPathParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				run_libertine_in_reproducible_build_environment_outputFolderPath="$value"
+				run_libertine_in_reproducible_build_environment_outputFolderPathParsed=true
+
+				shift 1
+			;;
+
+			--output=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_outputFolderPathParsed
+				run_libertine_in_reproducible_build_environment_outputFolderPath="${key##--output=}"
+				run_libertine_in_reproducible_build_environment_outputFolderPathParsed=true
+
+			;;
+
+			-o*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_outputFolderPathParsed
+				run_libertine_in_reproducible_build_environment_outputFolderPath="${key##-o}"
+				run_libertine_in_reproducible_build_environment_outputFolderPathParsed=true
+			;;
+
+			-m|--machine)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_machineNameParsed
+				environment_parseCommandLineArguments_missingArgument "$@"
+				run_libertine_in_reproducible_build_environment_machineNamee="$value"
+				run_libertine_in_reproducible_build_environment_machineNameParsed=true
+
+				shift 1
+			;;
+
+			--machine=*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_machineNameParsed
+				run_libertine_in_reproducible_build_environment_machineName="${key##--machine=}"
+				run_libertine_in_reproducible_build_environment_machineNameParsed=true
+			;;
+
+			-m*)
+				environment_parseCommandLineArguments_alreadyParsed $run_libertine_in_reproducible_build_environment_machineNameParsed
+				run_libertine_in_reproducible_build_environment_machineName="${key##-m}"
+				run_libertine_in_reproducible_build_environment_machineNameParsed=true
+			;;
+
+			-v|--verbose)
+				run_libertine_in_reproducible_build_environment_verbose=$((run_libertine_in_reproducible_build_environment_verbose + 1))
+			;;
+
+
+			-d|--debug)
+				run_libertine_in_reproducible_build_environment_debug=true
+				run_libertine_in_reproducible_build_environment_debugParsed=true
+			;;
+
+			-*)
+				environment_parseCommandLineArguments_errorHelp "Unexpected argument '$key'"
+			;;
+
+			*)
+				break
+			;;
+
+		esac
+
+		shift 1
+
+	done
+
+	# Parse positional arguments.
+	if [ $# -ne 0 ]; then
+		environment_parseCommandLineArguments_errorHelp "No positional arguments are accepted"
+	fi
+}
+
+depends mkdir
+run_libertine_in_reproducible_build_environment_validateCommandLineArguments()
+{
+	local absoluteFolderPath
+
+	if [ -z "$run_libertine_in_reproducible_build_environment_configurationFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--configuration folder path is empty"
+	fi
+	environment_makeFolderPathAbsolute "$run_libertine_in_reproducible_build_environment_configurationFolderPath"
+	run_libertine_in_reproducible_build_environment_configurationFolderPath="$absoluteFolderPath"
+	if [ ! -e "$run_libertine_in_reproducible_build_environment_configurationFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_reproducible_build_environment_configurationFolderPath' is not readable"
+	fi
+	if [ ! -r "$run_libertine_in_reproducible_build_environment_configurationFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_reproducible_build_environment_configurationFolderPath' is not readable"
+	fi
+	if [ ! -d "$run_libertine_in_reproducible_build_environment_configurationFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_reproducible_build_environment_configurationFolderPath' is not a directory"
+	fi
+	if [ ! -x "$run_libertine_in_reproducible_build_environment_configurationFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--configuration folder path '$run_libertine_in_reproducible_build_environment_configurationFolderPath' is not searchable"
+	fi
+
+	if [ -z "$run_libertine_in_reproducible_build_environment_outputFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--output folder path is empty"
+	fi
+	mkdir -m 0700 -p "$run_libertine_in_reproducible_build_environment_outputFolderPath"
+	environment_makeFolderPathAbsolute "$run_libertine_in_reproducible_build_environment_outputFolderPath"
+	run_libertine_in_reproducible_build_environment_outputFolderPath="$absoluteFolderPath"
+	if [ ! -r "$run_libertine_in_reproducible_build_environment_outputFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_reproducible_build_environment_outputFolderPath' is not readable"
+	fi
+	if [ ! -d "$run_libertine_in_reproducible_build_environment_outputFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_reproducible_build_environment_outputFolderPath' is not a directory"
+	fi
+	if [ ! -x "$run_libertine_in_reproducible_build_environment_outputFolderPath" ]; then
+		_run_libertine_in_reproducible_build_environment_parsedCommandLineArguments_errorHelp "--output folder path '$run_libertine_in_reproducible_build_environment_outputFolderPath' is not searchable"
+	fi
+}
+
+depends mkdir
+run_libertine_in_reproducible_build_environment_prepare()
+{
+	run_libertine_in_reproducible_build_environment_chrootFolderPath="$run_libertine_in_reproducible_build_environment_outputFolderPath"/chroot
+
+	run_libertine_in_reproducible_build_environment_mountFolderPath="$(pwd)"/mount
+	run_libertine_in_reproducible_build_environment_chrootMountFolderPath="$run_libertine_in_reproducible_build_environment_chrootFolderPath"/mount
+	mkdir -m 0700 -p "$run_libertine_in_reproducible_build_environment_chrootMountFolderPath"
+
+	run_libertine_in_reproducible_build_environment_chrootConfigurationFolderPath="$run_libertine_in_reproducible_build_environment_chrootFolderPath"/configuration
+	mkdir -m 0700 -p "$run_libertine_in_reproducible_build_environment_chrootConfigurationFolderPath"
+
+	run_libertine_in_reproducible_build_environment_buildFolderPath="$run_libertine_in_reproducible_build_environment_outputFolderPath"/build
+	mkdir -m 0700 -p "$run_libertine_in_reproducible_build_environment_buildFolderPath"
+	run_libertine_in_reproducible_build_environment_chrootBuildFolderPath="$run_libertine_in_reproducible_build_environment_chrootFolderPath"/build
+	mkdir -m 0700 -p "$run_libertine_in_reproducible_build_environment_chrootBuildFolderPath"
+
+	run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath="$run_libertine_in_reproducible_build_environment_configurationFolderPath"/build-environment.reproducible.configuration
+}
+
+depends id sudo
+run_libertine_in_reproducible_build_environment_reRunAsRootIfRequired()
+{
+	local currentUserIdentifier="$(id -u)"
+	if [ "$currentUserIdentifier" -ne 0 ]; then
+		exec sudo -p "Enter your password to run as root: " "$0" "$@"
+	fi
+}
+
+run_libertine_in_reproducible_build_environment_runInChroot()
+{	
+	set -- \
+		tools/reproducible/reproducible \
+		--configuration "$run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath" \
+		--output "$run_libertine_in_reproducible_build_environment_outputFolderPath" \
+		--mount "$run_libertine_in_reproducible_build_environment_mountFolderPath":/mount:true \
+		--mount "$run_libertine_in_reproducible_build_environment_configurationFolderPath":/configuration:true \
+		--mount "$run_libertine_in_reproducible_build_environment_buildFolderPath":/build:false \
+		-- \
+			/mount/libertine \
+			--machine "$run_libertine_in_reproducible_build_environment_machineName" \
+			--machines-path /configuration/machines \
+			--authority-path /configuration/certificate-authority \
+			--configuration /configuration/build-environment.configuration \
+			--output /build
+	if $run_libertine_in_reproducible_build_environment_debug; then
+		set -- "$@" --debug
+	fi
+
+	if [ $run_libertine_in_reproducible_build_environment_verbose -gt 0 ]; then
+		set -- "$@" --verbose "$run_libertine_in_reproducible_build_environment_verbose"
+		IFS=' ' printf "%s: NOTICE: About to run '%s'\n" 1>&2 "$program_name" "$*"
+	fi
+
+	exec "$@"
+}
+
+run_libertine_in_reproducible_build_environment_main()
+{
+	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
+
+	. tools/reproducible/environment.functions.sh
+
+	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
+
+Usage: ${program_name} -h | --help
+Usage: ${program_name} [-c|--configuration /path/to/configuration/folder] [-o|--ouput /path/to/output/folder] [-m|--machine name]
+
+If the configuration folder path is not provided, it defaults to program_location/sample-configuration.
+
+If the output folder path is not provided, it defaults to program_location/chroot. The output folder path is created as necessary.
+
+If the machine name is not provided, it defaults to example.
+"
+	local run_libertine_in_reproducible_build_environment_configurationFolderPath="$(pwd)"/sample-configuration
+	local run_libertine_in_reproducible_build_environment_outputFolderPath="$(pwd)"/output
+	local run_libertine_in_reproducible_build_environment_machineName='example'
+	local run_libertine_in_reproducible_build_environment_verbose=0
+	local run_libertine_in_reproducible_build_environment_debug=false
+	run_libertine_in_reproducible_build_environment_main_parseCommandLineArguments "$@"
+
+	run_libertine_in_reproducible_build_environment_validateCommandLineArguments
+
+	local run_libertine_in_reproducible_build_environment_chrootFolderPath
+	local run_libertine_in_reproducible_build_environment_mountFolderPath
+	local run_libertine_in_reproducible_build_environment_chrootMountFolderPath
+	local run_libertine_in_reproducible_build_environment_chrootConfigurationFolderPath
+	local run_libertine_in_reproducible_build_environment_buildFolderPath
+	local run_libertine_in_reproducible_build_environment_chrootBuildFolderPath
+	local run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath
+	run_libertine_in_reproducible_build_environment_prepare
+
+	tools/reproducible/alpine-linux-download \
+		--configuration "$run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath" \
+		--output "$run_libertine_in_reproducible_build_environment_outputFolderPath"
+
+	run_libertine_in_reproducible_build_environment_runInChroot
+}
+
+run_libertine_in_reproducible_build_environment_main "$@"
