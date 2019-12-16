@@ -22,7 +22,7 @@ This builds a full Libertine Linux image for a machine called `example`:-
 	# Wait a long time
 	
 	# Run inside a known, good, versioned Alpine Linux v3.9 chroot (in the future, we'll use a known good Libertine Linux image; this is just a bootstrap).
-	./run-libertine-in-alpine-linux-chroot -v 2
+	./run-libertine-in-reproducible-chroot -v -v
 	
 	# Output ready-to-run Linux image is in sample-configuration/output/machines/example/libertine-linux.vmlinuz
 	
@@ -31,16 +31,16 @@ This builds a full Libertine Linux image for a machine called `example`:-
 	
 	# Now log on to the console with a root password of `helloworld`
 
-To see what`s going on, take a look at the files in `sample-configuration/machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best. There`s a section below on understanding the configuration files that make up a machine. Machines are just a collection of packages, their configurations and any machine specific files. For example, the salted, hashed root password is stored in the file `sample-configuration/machines/example/package-configurations/libertine_filesystem_root_password.config`.
+To see what's going on, take a look at the files in `sample-configuration/machines`. If you copy the `example` machine folder, you can start work on your own. Machine names should be simple; DNS hostnames work best. There's a section below on understanding the configuration files that make up a machine. Machines are just a collection of packages, their configurations and any machine specific files. For example, the salted, hashed root password is stored in the file `sample-configuration/machines/example/package-configurations/libertine_filesystem_root_password.config`.
 
 
 ## Why?
 
-I like the idea of having one system, doing one thing well, that can be stored entirely in source control. That rebuilds as the same system every time from minimal dependencies. And that has zero administration. I want a system I control which version goes where. So that means no package manager arbitarily ----ing things up (eg when homebrew`s switch of llvm version from 3.8 to 3.9 wasted me a day). Instead our `packages` are just folders in git, with submodules for the upstream sources.
+I like the idea of having one system, doing one thing well, that can be stored entirely in source control. That rebuilds as the same system every time from minimal dependencies. And that has zero administration. I want a system I control which version goes where. So that means no package manager arbitarily ----ing things up (eg when homebrew's switch of llvm version from 3.8 to 3.9 wasted me a day). Instead our `packages` are just folders in git, with submodules for the upstream sources.
 
-I want a system I can just boot and use from RAM via PXE or QEMU / KVM. So I can deploy a large cluster, and upgrade machines by just rebooting or by using `kexec`. Reboot to upgrade means I don`t have to think whether that CVE fix to glibc means I have to restart all services or just those services and in what order. If the Linux install is small and simple, this will actually be quicker - and it won`t need an admin logging onto boxes. That means having a kernel with a builtin initramfs and command line, so there are no external dependencies.
+I want a system I can just boot and use from RAM via PXE or QEMU / KVM. So I can deploy a large cluster, and upgrade machines by just rebooting. Reboot to upgrade means I don't have to think whether that CVE fix to glibc means I have to restart all services or just those services and in what order. If the Linux install is small and simple, this will actually be quicker - and it won`t need an admin logging onto boxes. That means having a kernel with a builtin initramfs and command line, so there are no external dependencies.
 
-I want a system where I can patch a critical component - say the shell - by just a fork in git. That means avoiding release tarballs, and taking charge of the GNU `Build System` auto-guff. Making sure a bug in automake doesn`t make a CVE in my OS. It means being able to rebuild the entire OS, and self-bootstrap, from almost nothing. Right now, Libertine Linux works with just a C/C++ system compiler (with associated binutils) and BusyBox. It doesn`t even need make, perl or `auto-shaft` (automake, autoconf, etc) installed. It builds its own toolchain from scratch (including core utils), and so captures all those subtle inputs that the build environment can influence in the output.
+I want a system where I can patch a critical component - say the shell - by just a fork in git. That means avoiding release tarballs, and taking charge of the GNU `Build System` auto-guff. Making sure a bug in automake doesn't make a CVE in my OS. It means being able to rebuild the entire OS, and self-bootstrap, from almost nothing. Right now, Libertine Linux works with just a C/C++ system compiler (with associated binutils) and BusyBox. It doesn`t even need make, perl or `auto-shaft` (automake, autoconf, etc) installed. It builds its own toolchain from scratch (including core utils), and so captures all those subtle inputs that the build environment can influence in the output.
 
 I also like simple DevOps, and the ability to make the OS and the software I deploy one and the same. The idea of taking an OS that really is effective for the desktop, and using it for a server, is not sensible; the recent debacle of systemd shows us how confusing that can become. Instead, the right place to look for low maintainance, secure systems is the embedded space and the supercomputing space. Many of the design decisions in Libertine Linux are from my experience of building internet-scale, large deployment clusters and high performance, reliable and robust software over the last twenty years.
 

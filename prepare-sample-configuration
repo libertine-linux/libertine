@@ -161,7 +161,7 @@ prepare_sample_configuration_createSshKeyPair()
 		return 0
 	fi
 
-	umask 7077
+	umask 077
 	set +e
 		IFS= ssh-keygen -q "$@" -t "$keyPairType" -N '' -C "$keyPairType host key for sample-configuration 'example' machine (in sample-configuration/machines)" -f "$keyFilePath"
 	set -e

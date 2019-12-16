@@ -4,5 +4,6 @@
 
 # Ignore Mac OS X non-native filesystem files
 ._*
+.DS_Store
 
 output/

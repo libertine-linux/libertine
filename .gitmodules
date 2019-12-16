@@ -22,3 +22,11 @@
 	ignore = none
 	fetchRecurseSubmodules = true
 	shallow = false
+[submodule "tools/reproducible"]
+	path = tools/reproducible
+	url = https://github.com/libertine-linux/reproducible.git
+	branch = master
+	update = checkout
+	ignore = none
+	fetchRecurseSubmodules = true
+	shallow = false
