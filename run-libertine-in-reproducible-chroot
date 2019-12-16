@@ -296,6 +296,8 @@ run_libertine_in_reproducible_chroot_prepare()
 	mkdir -m 0700 -p "$run_libertine_in_reproducible_chroot_buildFolderPath"
 	run_libertine_in_reproducible_chroot_chrootBuildFolderPath="$run_libertine_in_reproducible_chroot_chrootFolderPath"/build
 	mkdir -m 0700 -p "$run_libertine_in_reproducible_chroot_chrootBuildFolderPath"
+
+	run_libertine_in_reproducible_chroot_reproducibleConfigurationFolderPath="$run_libertine_in_reproducible_chroot_configurationFolderPath"/build-environment.reproducible.configuration
 }
 
 depends id sudo
@@ -311,7 +313,7 @@ run_libertine_in_reproducible_chroot_runInChroot()
 {	
 	set -- \
 		tools/reproducible/reproducible-enter-chroot \
-		--configuration "$run_libertine_in_reproducible_chroot_configurationFolderPath"/build-environment.reproducible.configuration \
+		--configuration "$run_libertine_in_reproducible_chroot_reproducibleConfigurationFolderPath" \
 		--output "$run_libertine_in_reproducible_chroot_outputFolderPath" \
 		--mount "$run_libertine_in_reproducible_chroot_mountFolderPath":/mount:true \
 		--mount "$run_libertine_in_reproducible_chroot_configurationFolderPath":/configuration:true \
@@ -363,7 +365,7 @@ run_libertine_in_reproducible_chroot_main()
 {
 	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
 
-	. tools/alpine-linux/environment.functions.sh
+	. tools/reproducible/environment.functions.sh
 
 	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
 
@@ -391,10 +393,11 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_reproducible_chroot_chrootConfigurationFolderPath
 	local run_libertine_in_reproducible_chroot_buildFolderPath
 	local run_libertine_in_reproducible_chroot_chrootBuildFolderPath
+	local run_libertine_in_reproducible_chroot_reproducibleConfigurationFolderPath
 	run_libertine_in_reproducible_chroot_prepare
 
-	tools/alpine-linux/alpine-linux-download \
-		--configuration "$run_libertine_in_reproducible_chroot_configurationFolderPath"/alpine-linux \
+	tools/reproducible/alpine-linux-download \
+		--configuration "$run_libertine_in_reproducible_chroot_reproducibleConfigurationFolderPath" \
 		--output "$run_libertine_in_reproducible_chroot_outputFolderPath"
 
 	run_libertine_in_reproducible_chroot_mountRunInChrootAndUnmount
