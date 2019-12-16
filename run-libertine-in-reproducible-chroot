@@ -308,10 +308,10 @@ run_libertine_in_reproducible_chroot_reRunAsRootIfRequired()
 }
 
 run_libertine_in_reproducible_chroot_runInChroot()
-{
+{	
 	set -- \
-		tools/alpine-linux/reproducible-enter-chroot \
-		--configuration "$run_libertine_in_reproducible_chroot_configurationFolderPath"/alpine-linux \
+		tools/reproducible/reproducible-enter-chroot \
+		--configuration "$run_libertine_in_reproducible_chroot_configurationFolderPath"/build-environment.reproducible.configuration \
 		--output "$run_libertine_in_reproducible_chroot_outputFolderPath" \
 		--mount "$run_libertine_in_reproducible_chroot_mountFolderPath":/mount:true \
 		--mount "$run_libertine_in_reproducible_chroot_configurationFolderPath":/configuration:true \
@@ -321,7 +321,7 @@ run_libertine_in_reproducible_chroot_runInChroot()
 			--machine "$run_libertine_in_reproducible_chroot_machineName" \
 			--machines-path /configuration/machines \
 			--authority-path /configuration/certificate-authority \
-			--configuration /configuration/alpine-linux.x86_64.libertine.config \
+			--configuration /configuration/build-environment.configuration \
 			--output /build
 	if $run_libertine_in_reproducible_chroot_debug; then
 		set -- "$@" --debug
