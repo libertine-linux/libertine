@@ -6,4 +6,13 @@
 ._*
 .DS_Store
 
-output/
+/output/chroot
+/output/chroot-template
+/output/extracted-initramfs
+/output/extracted-modloop
+/output/extracted-packages
+/output/index
+# Deliberately commit /output/mirror/
+# Deliberately commit /output/packages/
+/output/qemu
+/output/temp
