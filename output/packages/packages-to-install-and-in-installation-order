@@ -1,0 +1,4 @@
+busybox-static	1.28.4-r3
+gcc	6.4.0-r9
+libstdc++	6.4.0-r9
+g++	6.4.0-r9
