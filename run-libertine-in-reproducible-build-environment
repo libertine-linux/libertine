@@ -337,12 +337,8 @@ run_libertine_in_reproducible_build_environment_runInChroot()
 	exec "$@"
 }
 
-run_libertine_in_reproducible_build_environment_main()
+run_libertine_in_reproducible_build_environment_commandLineArguments()
 {
-	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
-
-	. tools/reproducible/environment.functions.sh
-
 	local environment_parseCommandLineArguments_message="${program_name} Downloads and caches an Alpine Linux kernel, initramfs and packages for a basic known build environment.
 
 Usage: ${program_name} -h | --help
@@ -354,12 +350,21 @@ If the output folder path is not provided, it defaults to program_location/chroo
 
 If the machine name is not provided, it defaults to example.
 "
-	local run_libertine_in_reproducible_build_environment_configurationFolderPath="$(pwd)"/sample-configuration
-	local run_libertine_in_reproducible_build_environment_outputFolderPath="$(pwd)"/output
-	local run_libertine_in_reproducible_build_environment_machineName='example'
-	local run_libertine_in_reproducible_build_environment_verbose=0
-	local run_libertine_in_reproducible_build_environment_debug=false
+	run_libertine_in_reproducible_build_environment_configurationFolderPath="$(pwd)"/sample-configuration
+	run_libertine_in_reproducible_build_environment_outputFolderPath="$(pwd)"/output
+	run_libertine_in_reproducible_build_environment_machineName='example'
+	run_libertine_in_reproducible_build_environment_verbose=0
+	run_libertine_in_reproducible_build_environment_debug=false
 	run_libertine_in_reproducible_build_environment_main_parseCommandLineArguments "$@"
+}
+
+run_libertine_in_reproducible_build_environment_main()
+{
+	cd "$(_program_path_find)" 1>/dev/null 2>/dev/null
+
+	. tools/reproducible/functions/environment.functions
+	
+	run_libertine_in_reproducible_build_environment_commandLineArguments "$@"
 
 	run_libertine_in_reproducible_build_environment_validateCommandLineArguments
 
@@ -372,7 +377,7 @@ If the machine name is not provided, it defaults to example.
 	local run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath
 	run_libertine_in_reproducible_build_environment_prepare
 
-	tools/reproducible/alpine-linux-download \
+	tools/reproducible/support/alpine-linux-download \
 		--configuration "$run_libertine_in_reproducible_build_environment_reproducibleConfigurationFolderPath" \
 		--output "$run_libertine_in_reproducible_build_environment_outputFolderPath"
 
