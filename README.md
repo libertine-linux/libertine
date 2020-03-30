@@ -235,6 +235,8 @@ Lastly, though, the development of Libertine Linux debunks the mantra that the b
 	* We do not use Ubuntu`s pollinate service as it is far too Ubuntu-specific
 	* We would like to add support for tpm-tools
 	* Where possible, grsecurity is used to increase kernel entropy
+* The `/proc` filesystem is securely mounted.
+	* The `hidepid` mount option is set to `2`.
 * Language choices and preferences
 	* For today: C, or C++ if we have to
 	* For the future: Rust and, if we have to, Go
@@ -541,6 +543,16 @@ In general, a system C and C++ compiler, binutils and BusyBox are all that are n
 * Remove grsecurity support and update the kernel, potentially using the CLIP-OS branch.
 * Creae a docker image from scratch for reproducible building eg `tar -C expanded-initramfs -c . | docker import --message "<machine_name>-hash" - <machine_name>` or `docker load` or `docker create`
 * Add vagrant support
+
+
+### Boot Up and Shutdown
+
+* We use the Busybox `init`.
+	* This uses the snippets in `filesystem/etc/inittab.d`.
+* Boot up is controlled by the init file `rcS` in the package `libertine_filesystem` (see `filesystem/usr/sbin/rcS`).
+	* This can be overrideen by replacing the snippet `filesystem/etc/inittab.d/00.libertine_filesystem.inittab` with your own.
+* Shutdown down is controlled by the init file `rcK` in the package `libertine_filesystem` (see `filesystem/usr/sbin/rcK`).
+	* This can be overrideen by replacing the snippet `filesystem/etc/inittab.d/00.libertine_filesystem.inittab` with your own.
 
 
 ### Notes
